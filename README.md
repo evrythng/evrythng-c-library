@@ -76,7 +76,7 @@ MQTT_BROKER_TCP_URL definition in ./evrythng/tests/tests.c
 
 After sucessfull compilation you can launch demo application via ${build_dir}/demo/evrythng-cli command.
 ```
-./build_debug/evrythng-demo -h
+./build_debug/demo/evrythng-cli -h
 ```
 will print help. Add "-c ./docs/client.pem" option while establishing secure connection to ssl://mqtt.evrythng.com.
 Using "--pub" demo applicaton will send random values from [0,100] range to provided property every 2 seconds.
