@@ -32,3 +32,5 @@
 *.dSYM/
 
 build*
+html
+doxygen_sqlite3.db
