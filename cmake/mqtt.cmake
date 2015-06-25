@@ -1,0 +1,22 @@
+
+set(SRC
+    ${SRC}
+    ${PROJECT_SOURCE_DIR}/mqtt/src/Clients.c
+    ${PROJECT_SOURCE_DIR}/mqtt/src/Heap.c
+    ${PROJECT_SOURCE_DIR}/mqtt/src/LinkedList.c
+    ${PROJECT_SOURCE_DIR}/mqtt/src/Messages.c
+    ${PROJECT_SOURCE_DIR}/mqtt/src/Log.c
+    ${PROJECT_SOURCE_DIR}/mqtt/src/StackTrace.c
+    ${PROJECT_SOURCE_DIR}/mqtt/src/MQTTClient.c
+    ${PROJECT_SOURCE_DIR}/mqtt/src/MQTTPacket.c
+    ${PROJECT_SOURCE_DIR}/mqtt/src/MQTTPacketOut.c
+    ${PROJECT_SOURCE_DIR}/mqtt/src/MQTTProtocolClient.c
+    ${PROJECT_SOURCE_DIR}/mqtt/src/MQTTProtocolOut.c
+    ${PROJECT_SOURCE_DIR}/mqtt/src/SSLSocket.c
+    ${PROJECT_SOURCE_DIR}/mqtt/src/TLSSocket.c
+    ${PROJECT_SOURCE_DIR}/mqtt/src/Socket.c
+    ${PROJECT_SOURCE_DIR}/mqtt/src/SocketBuffer.c
+    ${PROJECT_SOURCE_DIR}/mqtt/src/Thread.c
+    ${PROJECT_SOURCE_DIR}/mqtt/src/Tree.c
+    ${PROJECT_SOURCE_DIR}/mqtt/src/utf-8.c
+)
