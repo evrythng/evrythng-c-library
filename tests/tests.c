@@ -225,8 +225,8 @@ void test_pubsub_thng_prop(CuTest* tc)
 void test_pubsuball_thng_prop(CuTest* tc)
 {
     START_PUBSUB
-    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, evrythng_subscribe_thng_property(h2, THNG_1, PROPERTY_1, test_sub_callback));
-    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, evrythng_publish_thng_property(h1, THNG_1, PROPERTY_1, PROPERTIES_VALUE_JSON, test_pub_callback));
+    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, evrythng_subscribe_thng_properties(h2, THNG_1, test_sub_callback));
+    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, evrythng_publish_thng_properties(h1, THNG_1, PROPERTIES_VALUE_JSON, test_pub_callback));
     END_PUBSUB
 }
 
@@ -355,9 +355,9 @@ void RunAllTests(void)
 	CuSuiteSummary(suite, output);
 	CuSuiteDetails(suite, output);
 	printf("%s\n", output->buffer);
+    CuStringDelete(output);
     
     CuSuiteDelete(suite);
-    CuStringDelete(output);
 }
 
 int main(void)

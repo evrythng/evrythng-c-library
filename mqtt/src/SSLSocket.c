@@ -44,6 +44,8 @@ void SSLSocket_addPendingRead(int sock);
 static ssl_mutex_type* sslLocks = NULL;
 static ssl_mutex_type sslCoreMutex;
 
+static int ssl_lib_inited = 0;
+
 #if defined(WIN32) || defined(WIN64)
 #define iov_len len
 #define iov_base buf
@@ -411,43 +413,48 @@ int SSLSocket_initialize()
 	
 	FUNC_ENTRY;
 
-	if ((rc = SSL_library_init()) != 1)
-		rc = -1;
+    if (!ssl_lib_inited)
+    {
+        if ((rc = SSL_library_init()) != 1)
+            rc = -1;
+
 #ifdef TODO_ITEMS		
-	ERR_load_crypto_strings();
+        ERR_load_crypto_strings();
 #endif
-	//SSL_load_error_strings();
-	
-	/* OpenSSL 0.9.8o and 1.0.0a and later added SHA2 algorithms to SSL_library_init(). 
-	Applications which need to use SHA2 in earlier versions of OpenSSL should call 
-	OpenSSL_add_all_algorithms() as well. */
-	
-	OpenSSL_add_all_algorithms();
-	
-	lockMemSize = CRYPTO_num_locks() * sizeof(ssl_mutex_type);
+        //SSL_load_error_strings();
 
-	sslLocks = malloc(lockMemSize);
-	if (!sslLocks)
-	{
-		rc = -1;
-		goto exit;
-	}
-	else
-		memset(sslLocks, 0, lockMemSize);
+        /* OpenSSL 0.9.8o and 1.0.0a and later added SHA2 algorithms to SSL_library_init(). 
+           Applications which need to use SHA2 in earlier versions of OpenSSL should call 
+           OpenSSL_add_all_algorithms() as well. */
 
-	for (i = 0; i < CRYPTO_num_locks(); i++)
-	{
-		/* prc = */SSL_create_mutex(&sslLocks[i]);
-	}
+        OpenSSL_add_all_algorithms();
+
+        SSL_create_mutex(&sslCoreMutex);
 
 #if (OPENSSL_VERSION_NUMBER >= 0x010000000)
-	CRYPTO_THREADID_set_callback(SSLThread_id);
+        CRYPTO_THREADID_set_callback(SSLThread_id);
 #else
-	CRYPTO_set_id_callback(SSLThread_id);
+        CRYPTO_set_id_callback(SSLThread_id);
 #endif
-	CRYPTO_set_locking_callback(SSLLocks_callback);
+        CRYPTO_set_locking_callback(SSLLocks_callback);
 
-	SSL_create_mutex(&sslCoreMutex);
+        ssl_lib_inited = 1;
+    }
+
+    lockMemSize = CRYPTO_num_locks() * sizeof(ssl_mutex_type);
+
+    sslLocks = malloc(lockMemSize);
+    if (!sslLocks)
+    {
+        rc = -1;
+        goto exit;
+    }
+    else memset(sslLocks, 0, lockMemSize);
+
+    for (i = 0; i < CRYPTO_num_locks(); i++)
+    {
+        /* prc = */SSL_create_mutex(&sslLocks[i]);
+    }
 
 exit:
 	FUNC_EXIT_RC(rc);
