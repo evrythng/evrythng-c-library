@@ -272,7 +272,8 @@ int Socket_getReadySocket(int more_work, struct timeval *tp)
 
 		memcpy((void*)&(s.rset), (void*)&(s.rset_saved), sizeof(s.rset));
 		memcpy((void*)&(pwset), (void*)&(s.pending_wset), sizeof(pwset));
-		if ((rc = pselect(s.maxfdp1, &(s.rset), &pwset, NULL, &ts, &sigmask)) == SOCKET_ERROR)
+		//if ((rc = pselect(s.maxfdp1, &(s.rset), &pwset, NULL, &ts, &sigmask)) == SOCKET_ERROR)
+		if ((rc = select(s.maxfdp1, &(s.rset), &pwset, NULL, &one)) == SOCKET_ERROR)
 		{
 			Socket_error("read select", 0);
 			goto exit;
@@ -287,7 +288,8 @@ int Socket_getReadySocket(int more_work, struct timeval *tp)
 
 		memcpy((void*)&wset, (void*)&(s.rset_saved), sizeof(wset));
         struct timespec ts_zero = {0};
-		if ((rc1 = pselect(s.maxfdp1, NULL, &(wset), NULL, &ts_zero, &sigmask)) == SOCKET_ERROR)
+		//if ((rc1 = pselect(s.maxfdp1, NULL, &(wset), NULL, &ts_zero, &sigmask)) == SOCKET_ERROR)
+		if ((rc1 = select(s.maxfdp1, NULL, &(wset), NULL, &zero)) == SOCKET_ERROR)
 		{
 			Socket_error("write select", 0);
 			rc = rc1;

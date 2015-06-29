@@ -400,7 +400,7 @@ int main(void)
     sem_init(&sub_sem, 0, 0);
 
 #if defined(CONFIG_OS_FREERTOS)
-    xTaskCreate(RunAllTests, "tests", 1024, 0, 0, NULL);
+    xTaskCreate(RunAllTests, "tests", 1024, 0, 1, NULL);
 
     vTaskStartScheduler();
 #else

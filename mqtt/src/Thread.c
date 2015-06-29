@@ -67,7 +67,7 @@ thread_type Thread_start(thread_fn fn, void* parameter)
 
 	FUNC_ENTRY;
 #if defined(CONFIG_OS_FREERTOS)
-	if (xTaskCreate((pdTASK_CODE)fn, "MQTT", 256 * 10, parameter, 0, &thread) != pdPASS)
+	if (xTaskCreate((pdTASK_CODE)fn, "MQTT", 256 * 10, parameter, 1, &thread) != pdPASS)
 		thread = 0;
 #elif defined(WIN32) || defined(WIN64)
 	thread = CreateThread(NULL, 0, fn, parameter, 0, NULL);
