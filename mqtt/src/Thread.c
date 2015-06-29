@@ -368,7 +368,6 @@ int Thread_destroy_sem(sem_type sem)
 	FUNC_ENTRY;
 	#if defined(CONFIG_OS_FREERTOS)
 		vSemaphoreDelete(sem);
-		free(sem);
 	#elif defined(WIN32) || defined(WIN64)
 		rc = CloseHandle(sem);
     #elif defined(USE_NAMED_SEMAPHORES)

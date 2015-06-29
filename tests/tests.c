@@ -7,6 +7,7 @@
 #include <errno.h>
 #include <string.h>
 #include <time.h>
+#include <signal.h>
 
 //#define MQTT_BROKER_TCP_URL "tcp://mqtt.evrythng.com:1883"
 #define MQTT_BROKER_TCP_URL "tcp://localhost:1883"
@@ -25,6 +26,21 @@
 #define ACTION_JSON "{\"type\": \"_action_1\"}"
 
 #define LOCATION_JSON  "[{\"position\": { \"type\": \"Point\", \"coordinates\": [-17.3, 36] }}]"
+
+
+#if defined(CONFIG_OS_FREERTOS)
+
+#include "FreeRTOS.h"
+#include "task.h"
+#include <unistd.h>
+
+/* This is application idle hook which is used by FreeRTOS */
+void vApplicationIdleHook(void)
+{
+    sleep(1);
+}
+#endif
+
 
 sem_t pub_sem;
 sem_t sub_sem;
@@ -193,6 +209,26 @@ static void test_sub_callback(const char* str_json, size_t len)
     sem_post(&sub_sem);
 }
 
+int sem_timed_wait(sem_t* sem)
+{
+    struct timespec ts;
+    clock_gettime(CLOCK_REALTIME, &ts);
+    ts.tv_sec += 10;
+
+    do 
+    {
+        int ret = sem_timedwait(sem, &ts);
+        if (!ret) return 0;
+        else
+        { 
+            if (errno == EINTR) continue;
+            return -1;
+        }
+    } while(1);
+
+    return -1;
+}
+
 #define START_PUBSUB \
     evrythng_handle_t h1;\
     evrythng_handle_t h2;\
@@ -202,17 +238,12 @@ static void test_sub_callback(const char* str_json, size_t len)
     CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, evrythng_connect(h2));
 
 #define END_PUBSUB \
-    struct timespec ts;\
-    clock_gettime(CLOCK_REALTIME, &ts);\
-    ts.tv_sec += 10;\
-    CuAssertIntEquals(tc, 0, sem_timedwait(&pub_sem, &ts));\
-    clock_gettime(CLOCK_REALTIME, &ts);\
-    ts.tv_sec += 10;\
-    CuAssertIntEquals(tc, 0, sem_timedwait(&sub_sem, &ts));\
+    CuAssertIntEquals(tc, 0, sem_timed_wait(&pub_sem));\
+    CuAssertIntEquals(tc, 0, sem_timed_wait(&sub_sem));\
     evrythng_disconnect(h1);\
     evrythng_disconnect(h2);\
     evrythng_destroy_handle(h1);\
-    evrythng_destroy_handle(h2);\
+    evrythng_destroy_handle(h2);
 
 void test_pubsub_thng_prop(CuTest* tc)
 {
@@ -345,27 +376,36 @@ CuSuite* CuGetSuite(void)
 }
 
 
-void RunAllTests(void)
+void RunAllTests(void* v)
 {
 	CuString *output = CuStringNew();
-
     CuSuite* suite = CuGetSuite();
 
 	CuSuiteRun(suite);
 	CuSuiteSummary(suite, output);
 	CuSuiteDetails(suite, output);
-	printf("%s\n", output->buffer);
+    printf("%s\n", output->buffer);
     CuStringDelete(output);
-    
     CuSuiteDelete(suite);
+
+#if defined(CONFIG_OS_FREERTOS)
+    vTaskEndScheduler();
+#endif
 }
+
 
 int main(void)
 {
     sem_init(&pub_sem, 0, 0);
     sem_init(&sub_sem, 0, 0);
 
-	RunAllTests();
+#if defined(CONFIG_OS_FREERTOS)
+    xTaskCreate(RunAllTests, "tests", 1024, 0, 0, NULL);
+
+    vTaskStartScheduler();
+#else
+	RunAllTests(0);
+#endif
 
     return EXIT_SUCCESS;
 }

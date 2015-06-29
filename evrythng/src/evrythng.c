@@ -359,6 +359,8 @@ void delivery_complete_callback(void* context, MQTTClient_deliveryToken dt)
 {
     evrythng_handle_t handle = (evrythng_handle_t)context;
 
+    debug("%s: delivery complete, dt = %d", __func__, dt);
+
     pub_callback_t **_pub_callbacks = &handle->pub_callbacks;
     while(*_pub_callbacks) 
     {
