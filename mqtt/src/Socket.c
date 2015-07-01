@@ -41,7 +41,13 @@
 #include <ctype.h>
 #endif
 
+#include <unistd.h>
+
 #include "Heap.h"
+
+#if defined(FREERTOS_SIMULATOR)
+#include <signal.h>
+#endif
 
 int Socket_close_only(int socket);
 int Socket_continueWrites(fd_set* pwset);
@@ -261,11 +267,20 @@ int Socket_getReadySocket(int more_work, struct timeval *tp)
 	if (s.cur_clientsds == NULL)
 	{
 		int rc1;
+#if defined(FREERTOS_SIMULATOR)
+        sigset_t sigmask;
+        sigfillset(&sigmask);
+#endif
 		fd_set pwset;
 
 		memcpy((void*)&(s.rset), (void*)&(s.rset_saved), sizeof(s.rset));
 		memcpy((void*)&(pwset), (void*)&(s.pending_wset), sizeof(pwset));
-		if ((rc = select(s.maxfdp1, &(s.rset), &pwset, NULL, &timeout)) == SOCKET_ERROR)
+#if defined(FREERTOS_SIMULATOR)
+        struct timespec ts = {timeout.tv_sec, timeout.tv_usec*1000};
+		if ((rc = pselect(s.maxfdp1, &(s.rset), &pwset, NULL, &ts, &sigmask)) == SOCKET_ERROR)
+#else
+		if ((rc = select(s.maxfdp1, &(s.rset), &pwset, NULL, &one)) == SOCKET_ERROR)
+#endif
 		{
 			Socket_error("read select", 0);
 			goto exit;
@@ -279,7 +294,12 @@ int Socket_getReadySocket(int more_work, struct timeval *tp)
 		}
 
 		memcpy((void*)&wset, (void*)&(s.rset_saved), sizeof(wset));
+#if defined(FREERTOS_SIMULATOR)
+        struct timespec ts_zero = {0};
+		if ((rc1 = pselect(s.maxfdp1, NULL, &(wset), NULL, &ts_zero, &sigmask)) == SOCKET_ERROR)
+#else
 		if ((rc1 = select(s.maxfdp1, NULL, &(wset), NULL, &zero)) == SOCKET_ERROR)
+#endif
 		{
 			Socket_error("write select", 0);
 			rc = rc1;
@@ -892,7 +912,7 @@ char* Socket_getaddrname(struct sockaddr* sa, int sock)
 	/* strcpy(&addr_string[strlen(addr_string)], "what?"); */
 #else
 	struct sockaddr_in *sin = (struct sockaddr_in *)sa;
-#if !defined(CONFIG_OS_FREERTOS)
+#if !defined(CONFIG_OS_FREERTOS) || defined(FREERTOS_SIMULATOR)
 	inet_ntop(sin->sin_family, &sin->sin_addr, addr_string, ADDRLEN);
 #else
 	ipaddr_ntoa_r((const ip_addr_t *)(&sin->sin_addr), addr_string, ADDRLEN);

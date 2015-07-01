@@ -5,6 +5,9 @@
 #include <stdint.h>
 #include <FreeRTOS.h>
 #include <task.h>
+#include <string.h>
+
+#if !defined(FREERTOS_SIMULATOR)
 #include <lwip/lwipopts.h>
 #include <lwip/opt.h>
 #include <lwip/sockets.h>
@@ -13,18 +16,46 @@
 #include <lwip/netdb.h>
 #include <lwip/err.h>
 #include <lwip/inet.h>
-#include <string.h>
 
-#define malloc pvPortMalloc
-#define realloc pvPortReAlloc
-#define free(ptr) vPortFree(ptr)
+#define time_t uint32_t
 
-#define difftime(t1, t0) (double)(t1 - t0)
+#define exit(...)
+extern time_t rtc_time_get(void);
+void time(time_t *c_time);
 
+#if 0
 struct iovec {
 	void *iov_base;   /* Starting address */
 	size_t iov_len;   /* Number of bytes */
 };
+#endif
+
+#else
+
+#include <semphr.h>
+#include <sys/socket.h>
+#include <sys/time.h>
+#include <sys/select.h>
+#include <netinet/in.h>
+#include <netinet/tcp.h>
+#include <arpa/inet.h>
+#include <netdb.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <errno.h>
+#include <fcntl.h>
+#include <time.h>
+#include <stdbool.h>
+
+#define rtc_time_get() time(NULL)
+
+#endif
+
+#define malloc pvPortMalloc
+#define free(ptr) vPortFree(ptr)
+//#define realloc pvPortReAlloc
+
+#define difftime(t1, t0) (double)(t1 - t0)
 
 void Log_setLevel(int level);
 #if defined(EVRYTHNG_DEBUG)
@@ -33,16 +64,8 @@ void Log(int, int, char *, ...);
 #define Log(...)
 #endif
 
-#define time_t uint32_t
-
-extern time_t rtc_time_get(void);
-
-void time(time_t *c_time);
-
-#define exit(...)
 
 // OpenSSL defines that are missing in CyaSSL
-
 #define SSLEAY_CFLAGS 2
 #define SSLEAY_BUILT_ON 3
 #define SSLEAY_PLATFORM 4
