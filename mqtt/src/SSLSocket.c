@@ -363,6 +363,7 @@ void SSL_destroy_mutex(ssl_mutex_type* mutex)
 	rc = CloseHandle(*mutex);
 #elif defined(CONFIG_OS_FREERTOS)
 	Thread_destroy_mutex(*mutex);
+	rc = 0
 #else
 	rc = pthread_mutex_destroy(mutex);
 	free(mutex);
@@ -377,8 +378,6 @@ extern void SSLThread_id(CRYPTO_THREADID *id)
 {
 #if defined(WIN32) || defined(WIN64)
 	CRYPTO_THREADID_set_numeric(id, (unsigned long)GetCurrentThreadId());
-#elif defined(CONFIG_OS_FREERTOS)
-	CRYPTO_THREADID_set_numeric(id, (unsigned long)Thread_getid());
 #else
 	CRYPTO_THREADID_set_numeric(id, (unsigned long)pthread_self());
 #endif

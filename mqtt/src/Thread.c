@@ -54,7 +54,11 @@
  * @param parameter pointer to the function parameter, can be NULL
  * @return the new thread
  */
+#if defined(CONFIG_OS_FREERTOS)
+thread_type Thread_start(thread_fn fn, const signed char* const name, unsigned short stack_size, unsigned short priority, void* parameter)
+#else
 thread_type Thread_start(thread_fn fn, void* parameter)
+#endif
 {
 #if defined(CONFIG_OS_FREERTOS)
 	void *thread = 0;
@@ -67,7 +71,7 @@ thread_type Thread_start(thread_fn fn, void* parameter)
 
 	FUNC_ENTRY;
 #if defined(CONFIG_OS_FREERTOS)
-	if (xTaskCreate((pdTASK_CODE)fn, "MQTT", 256 * 10, parameter, 1, &thread) != pdPASS)
+	if (xTaskCreate((pdTASK_CODE)fn, (const signed char* const)name, stack_size, parameter, (unsigned portBASE_TYPE)priority, &thread) != pdPASS)
 		thread = 0;
 #elif defined(WIN32) || defined(WIN64)
 	thread = CreateThread(NULL, 0, fn, parameter, 0, NULL);
@@ -90,7 +94,9 @@ thread_type Thread_start(thread_fn fn, void* parameter)
 mutex_type Thread_create_mutex()
 {
 	mutex_type mutex = NULL;
+	#if !defined(CONFIG_OS_FREERTOS)
 	int rc = 0;
+	#endif
 
 	FUNC_ENTRY;
 	#if defined(CONFIG_OS_FREERTOS)
@@ -161,7 +167,9 @@ int Thread_unlock_mutex(mutex_type mutex)
  */
 void Thread_destroy_mutex(mutex_type mutex)
 {
+	#if !defined(CONFIG_OS_FREERTOS)
 	int rc = 0;
+	#endif
 
 	FUNC_ENTRY;
 	#if defined(CONFIG_OS_FREERTOS)
@@ -213,7 +221,9 @@ static struct
 sem_type Thread_create_sem()
 {
 	sem_type sem = NULL;
+	#if !defined(CONFIG_OS_FREERTOS)
 	int rc = 0;
+	#endif
 
 	FUNC_ENTRY;
 	#if defined(CONFIG_OS_FREERTOS)
@@ -512,8 +522,11 @@ int main(int argc, char *argv[])
 	printf("check sem %d\n", Thread_check_sem(sem));
 
 	printf("Starting secondary thread\n");
+#if defined(CONFIG_OS_FREERTOS)
+	Thread_start(secondary, NULL, configMINIMAL_STACK_SIZE * 10, 0, (void*)sem));
+#else
 	Thread_start(secondary, (void*)sem);
-
+#endif
 	sleep(3);
 	printf("check sem %d\n", Thread_check_sem(sem));
 

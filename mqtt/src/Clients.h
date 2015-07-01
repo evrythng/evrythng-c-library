@@ -28,6 +28,9 @@
 #if defined(WIN32) || defined(WIN64)
 #include "winsock2.h"
 #endif
+#if defined(CONFIG_OS_FREERTOS) && defined(NO_FILESYSTEM)
+#undef NO_FILESYSTEM
+#endif
 #include <openssl/ssl.h>
 #endif
 #if defined(TLSSOCKET)

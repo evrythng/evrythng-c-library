@@ -262,12 +262,16 @@ int MQTTProtocol_handlePublishes(void* pack, int sock)
 {
 	Publish* publish = (Publish*)pack;
 	Clients* client = NULL;
+#if !defined(CONFIG_OS_FREERTOS) || defined(EVRYTHNG_DEBUG)
 	char* clientid = NULL;
+#endif
 	int rc = TCPSOCKET_COMPLETE;
 
 	FUNC_ENTRY;
 	client = (Clients*)(ListFindItem(bstate->clients, &sock, clientSocketCompare)->content);
+#if !defined(CONFIG_OS_FREERTOS) || defined(EVRYTHNG_DEBUG)
 	clientid = client->clientID;
+#endif
 	Log(LOG_PROTOCOL, 11, NULL, sock, clientid, publish->msgId, publish->header.bits.qos,
 					publish->header.bits.retain, min(20, publish->payloadlen), publish->payload);
 

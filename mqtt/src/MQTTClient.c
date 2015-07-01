@@ -87,11 +87,17 @@ MQTTProtocol state;
 #if defined(CONFIG_OS_FREERTOS)
 mutex_type mqttclient_mutex;
 extern mutex_type heap_mutex;
+#if defined(EVRYTHNG_DEBUG)
+extern mutex_type log_mutex;
+#endif
 
 void MQTTClient_init()
 {
 	heap_mutex = xSemaphoreCreateRecursiveMutex();
 	mqttclient_mutex = xSemaphoreCreateRecursiveMutex();
+#if defined(EVRYTHNG_DEBUG)
+	log_mutex = xSemaphoreCreateRecursiveMutex();
+#endif
 }
 #define WINAPI
 #elif defined(WIN32) || defined(WIN64)
@@ -190,8 +196,7 @@ void MQTTClient_sleep(long milliseconds)
 {
 	FUNC_ENTRY;
 #if defined(CONFIG_OS_FREERTOS)
-	//vTaskDelay(milliseconds * portTICK_RATE_MS);
-    usleep(milliseconds * 1000);
+	vTaskDelay(milliseconds/portTICK_RATE_MS);
 #elif defined(WIN32) || defined(WIN64)
 	Sleep(milliseconds);
 #else
@@ -234,7 +239,6 @@ START_TIME_TYPE MQTTClient_start_clock(void)
 #if defined(CONFIG_OS_FREERTOS)
 long MQTTClient_elapsed(time_t start)
 {
-	usleep(10);
 	return rtc_time_get() - start;
 }
 #elif defined(WIN32) || defined(WIN64)
@@ -406,18 +410,17 @@ void MQTTClient_destroy(MQTTClient* handle)
 
 	if (m->c)
 	{
+#if !defined(CONFIG_OS_FREERTOS) || defined(EVRYTHNG_DEBUG)
 		int saved_socket = m->c->net.socket;
+#endif
 		char* saved_clientid = MQTTStrdup(m->c->clientID);
 #if !defined(NO_PERSISTENCE)
 		MQTTPersistence_close(m->c);
 #endif
 		MQTTClient_emptyMessageQueue(m->c);
 		MQTTProtocol_freeClient(m->c);
-
 		if (!ListRemove(bstate->clients, m->c))
-        {
 			Log(LOG_ERROR, 0, NULL);
-        }
 		else
 			Log(TRACE_MIN, 1, NULL, saved_clientid, saved_socket);
 		free(saved_clientid);
@@ -664,7 +667,9 @@ thread_return_type WINAPI MQTTClient_run(void* n)
 
 void MQTTClient_stop()
 {
+#if !defined(CONFIG_OS_FREERTOS) || defined(EVRYTHNG_DEBUG)
 	int rc = 0;
+#endif
 
 	FUNC_ENTRY;
 	if (running == 1 && tostop == 0)
@@ -700,7 +705,9 @@ void MQTTClient_stop()
 					Thread_lock_mutex(mqttclient_mutex);
 				}
 			}
+#if !defined(CONFIG_OS_FREERTOS) || defined(EVRYTHNG_DEBUG)
 			rc = 1;
+#endif
 		}
 	}
 	FUNC_EXIT_RC(rc);
@@ -838,7 +845,11 @@ int MQTTClient_connectURIVersion(MQTTClient handle, MQTTClient_connectOptions* o
 	FUNC_ENTRY;
 	if (m->ma && !running)
 	{
+#if defined(CONFIG_OS_FREERTOS)
+		Thread_start(MQTTClient_run, NULL, configMINIMAL_STACK_SIZE * 5, 0, handle);
+#else
 		Thread_start(MQTTClient_run, handle);
+#endif
 		if (MQTTClient_elapsed(start) >= millisecsTimeout)
 		{
 			rc = SOCKET_ERROR;
@@ -1136,17 +1147,17 @@ int MQTTClient_connectURI(MQTTClient handle, MQTTClient_connectOptions* options,
 		memset(m->c->cfg, '\0', sizeof(tls_init_config_t));
 	if (options->ssl->trustStore)
         {
-		m->c->cfg->tls.client.ca_cert = MQTTStrdup(options->ssl->trustStore);
+		m->c->cfg->tls.client.ca_cert = (const unsigned char*)MQTTStrdup(options->ssl->trustStore);
 		m->c->cfg->tls.client.ca_cert_size = options->ssl->trustStore_size;
         }
 	if (options->ssl->keyStore)
         {
-		m->c->cfg->tls.client.client_cert = MQTTStrdup(options->ssl->keyStore);
+		m->c->cfg->tls.client.client_cert = (const unsigned char*)MQTTStrdup(options->ssl->keyStore);
 		m->c->cfg->tls.client.client_cert_size = options->ssl->keyStore_size;
         }
 	if (options->ssl->privateKey)
         {
-		m->c->cfg->tls.client.client_key = MQTTStrdup(options->ssl->privateKey);
+		m->c->cfg->tls.client.client_key = (const unsigned char*)MQTTStrdup(options->ssl->privateKey);
 		m->c->cfg->tls.client.client_key_size = options->ssl->privateKey_size;
         }
         m->c->cfg->flags |= TLS_CHECK_SERVER_CERT;
@@ -1309,7 +1320,11 @@ exit:
 	if (internal && m->cl && was_connected)
 	{
 		Log(TRACE_MIN, -1, "Calling connectionLost for client %s", m->c->clientID);
+#if defined(CONFIG_OS_FREERTOS)
+		Thread_start(connectionLost_call, NULL, configMINIMAL_STACK_SIZE * 10, 0, m);
+#else
 		Thread_start(connectionLost_call, m);
+#endif
 	}
 	Thread_unlock_mutex(mqttclient_mutex);
 	FUNC_EXIT_RC(rc);

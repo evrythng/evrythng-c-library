@@ -84,7 +84,6 @@ typedef struct
 #if defined(CONFIG_OS_FREERTOS)
 #define Log_initialize(...)
 #define Log_terminate()
-#define Log(log_level, msgno, format, ...)// wmprintf(format, ##__VA_ARGS__)
 #define Log_stackTrace(...)
 //typedef void Log_traceCallback(enum LOG_LEVELS level, char* message);
 #define Log_setTraceCallback(...)

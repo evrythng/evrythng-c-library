@@ -69,7 +69,9 @@ typedef struct
 } storageElement;
 
 static Tree heap;	/**< Tree that holds the allocation records */
+#if !defined(CONFIG_OS_FREERTOS) || defined(EVRYTHNG_DEBUG)
 static char* errmsg = "Memory allocation error";
+#endif
 
 /**
  * Round allocation size up to a multiple of the size of an int.  Apart from possibly reducing fragmentation,
@@ -188,7 +190,9 @@ void checkEyecatchers(char* file, int line, void* p, int size)
 	int *sp = (int*)p;
 	char *cp = (char*)p;
 	int us;
+#if !defined(CONFIG_OS_FREERTOS) || defined(EVRYTHNG_DEBUG)
 	static char* msg = "Invalid %s eyecatcher %d in heap item at file %s line %d";
+#endif
 
 	if ((us = *--sp) != eyecatcher)
 		Log(LOG_ERROR, 13, msg, "start", us, file, line);

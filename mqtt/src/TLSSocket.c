@@ -63,7 +63,9 @@ static int TLSSocket_error(char* aString, tls_handle_t h, int sock, int rc)
 	}
 	else
 	{
+#if !defined(CONFIG_OS_FREERTOS) || defined(EVRYTHNG_DEBUG)
 		static char buf[120];
+#endif
 
 		if (strcmp(aString, "shutdown") != 0)
 			Log(TRACE_MIN, -1, "TLSSocket error %s(%d) in %s for socket %d rc %d errno %d %s\n", buf, error, aString, sock, rc, errno, strerror(errno));

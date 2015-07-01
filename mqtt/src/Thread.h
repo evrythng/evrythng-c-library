@@ -54,7 +54,11 @@
 	int Thread_destroy_cond(cond_type);
 #endif
 
+#if defined(CONFIG_OS_FREERTOS)
+thread_type Thread_start(thread_fn, const signed char* const, unsigned short, unsigned short, void*);
+#else
 thread_type Thread_start(thread_fn, void*);
+#endif
 
 mutex_type Thread_create_mutex();
 int Thread_lock_mutex(mutex_type);

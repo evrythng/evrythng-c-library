@@ -195,11 +195,17 @@ int MQTTProtocol_subscribe(Clients* client, List* topics, List* qoss, int msgID)
 int MQTTProtocol_handleSubacks(void* pack, int sock)
 {
 	Suback* suback = (Suback*)pack;
+#if !defined(CONFIG_OS_FREERTOS) || defined(EVRYTHNG_DEBUG)
 	Clients* client = NULL;
+#endif
 	int rc = TCPSOCKET_COMPLETE;
 
 	FUNC_ENTRY;
+#if !defined(CONFIG_OS_FREERTOS) || defined(EVRYTHNG_DEBUG)
 	client = (Clients*)(ListFindItem(bstate->clients, &sock, clientSocketCompare)->content);
+#else
+	(void)(ListFindItem(bstate->clients, &sock, clientSocketCompare)->content);
+#endif
 	Log(LOG_PROTOCOL, 23, NULL, sock, client->clientID, suback->msgId);
 	MQTTPacket_freeSuback(suback);
 	FUNC_EXIT_RC(rc);
@@ -234,11 +240,17 @@ int MQTTProtocol_unsubscribe(Clients* client, List* topics, int msgID)
 int MQTTProtocol_handleUnsubacks(void* pack, int sock)
 {
 	Unsuback* unsuback = (Unsuback*)pack;
+#if !defined(CONFIG_OS_FREERTOS) || defined(EVRYTHNG_DEBUG)
 	Clients* client = NULL;
+#endif
 	int rc = TCPSOCKET_COMPLETE;
 
 	FUNC_ENTRY;
+#if !defined(CONFIG_OS_FREERTOS) || defined(EVRYTHNG_DEBUG)
 	client = (Clients*)(ListFindItem(bstate->clients, &sock, clientSocketCompare)->content);
+#else
+	(void)(ListFindItem(bstate->clients, &sock, clientSocketCompare)->content);
+#endif
 	Log(LOG_PROTOCOL, 24, NULL, sock, client->clientID, unsuback->msgId);
 	free(unsuback);
 	FUNC_EXIT_RC(rc);

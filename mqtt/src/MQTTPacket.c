@@ -101,7 +101,9 @@ void* MQTTPacket_Factory(networkHandles* net, int* error)
 	char* data = NULL;
 	static Header header;
 	int remaining_length, ptype;
+#if !defined(CONFIG_OS_FREERTOS) || defined(EVRYTHNG_DEBUG)
 	size_t remaining_length_new;
+#endif
 	void* pack = NULL;
 	int actual_len = 0;
 
