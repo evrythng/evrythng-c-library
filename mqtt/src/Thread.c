@@ -55,7 +55,7 @@
  * @return the new thread
  */
 #if defined(CONFIG_OS_FREERTOS)
-thread_type Thread_start(thread_fn fn, const signed char* const name, unsigned short stack_size, unsigned short priority, void* parameter)
+thread_type Thread_start(thread_fn fn, const char* name, unsigned short stack_size, unsigned short priority, void* parameter)
 #else
 thread_type Thread_start(thread_fn fn, void* parameter)
 #endif
@@ -523,7 +523,7 @@ int main(int argc, char *argv[])
 
 	printf("Starting secondary thread\n");
 #if defined(CONFIG_OS_FREERTOS)
-	Thread_start(secondary, NULL, configMINIMAL_STACK_SIZE * 10, 0, (void*)sem));
+	Thread_start(secondary, NULL, configMINIMAL_STACK_SIZE * 10, 0, (void*)sem);
 #else
 	Thread_start(secondary, (void*)sem);
 #endif

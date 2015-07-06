@@ -210,10 +210,12 @@ evrythng_return_t evrythng_set_certificate(evrythng_handle_t handle, const char*
 {
     if (!handle || !cert || size <= 0)
         return EVRYTHNG_BAD_ARGS;
-    //TODO: define NO_FILESYSTEM to ssl lib
     int r = replace_str(&handle->ca_buf, cert, size);
     handle->ca_size = size;
     handle->mqtt_ssl_opts.trustStore = handle->ca_buf;
+#if defined(NO_FILESYSTEM)
+    handle->mqtt_ssl_opts.trustStore_size = size;
+#endif
     return r;
 }
 

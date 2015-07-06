@@ -5,7 +5,6 @@
 #include <stdint.h>
 #include <FreeRTOS.h>
 #include <task.h>
-#include <string.h>
 
 #if !defined(FREERTOS_SIMULATOR)
 #include <lwip/lwipopts.h>
@@ -16,6 +15,7 @@
 #include <lwip/netdb.h>
 #include <lwip/err.h>
 #include <lwip/inet.h>
+#include <string.h>
 
 #define time_t uint32_t
 
@@ -23,12 +23,10 @@
 extern time_t rtc_time_get(void);
 void time(time_t *c_time);
 
-#if 0
 struct iovec {
 	void *iov_base;   /* Starting address */
 	size_t iov_len;   /* Number of bytes */
 };
-#endif
 
 #else
 
@@ -53,7 +51,7 @@ struct iovec {
 
 #define malloc pvPortMalloc
 #define free(ptr) vPortFree(ptr)
-//#define realloc pvPortReAlloc
+#define realloc pvPortReAlloc
 
 #define difftime(t1, t0) (double)(t1 - t0)
 
@@ -66,6 +64,7 @@ void Log(int, int, char *, ...);
 
 
 // OpenSSL defines that are missing in CyaSSL
+
 #define SSLEAY_CFLAGS 2
 #define SSLEAY_BUILT_ON 3
 #define SSLEAY_PLATFORM 4

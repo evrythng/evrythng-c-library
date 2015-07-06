@@ -348,7 +348,9 @@ void HeapScan(int log_level)
 	Log(log_level, -1, "Heap scan start, total %d bytes", state.current_size);
 	while ((current = TreeNextElement(&heap, current)) != NULL)
 	{
+#if !defined(CONFIG_OS_FREERTOS) || defined(EVRYTHNG_DEBUG)
 		storageElement* s = (storageElement*)(current->content);
+#endif
 		Log(log_level, -1, "Heap element size %d, line %d, file %s, ptr %p", s->size, s->line, s->file, s->ptr);
 		Log(log_level, -1, "  Content %*.s", (10 > current->size) ? s->size : 10, (char*)(((int*)s->ptr) + 1));
 	}

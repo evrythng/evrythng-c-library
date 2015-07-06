@@ -55,7 +55,7 @@
 #endif
 
 #if defined(CONFIG_OS_FREERTOS)
-thread_type Thread_start(thread_fn, const signed char* const, unsigned short, unsigned short, void*);
+thread_type Thread_start(thread_fn, const char*, unsigned short, unsigned short, void*);
 #else
 thread_type Thread_start(thread_fn, void*);
 #endif

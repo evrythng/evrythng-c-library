@@ -14,7 +14,7 @@
 #include "FreeRTOS.h"
 #include "task.h"
 #define malloc      pvPortMalloc
-#define free        vPortFree
+#define free(ptr)   vPortFree(ptr)
 #define sleep(sec)  vTaskDelay((sec*1000)/portTICK_RATE_MS);
 
 #else
