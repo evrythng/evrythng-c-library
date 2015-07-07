@@ -1969,7 +1969,7 @@ int MQTTAsync_connect(MQTTAsync handle, const MQTTAsync_connectOptions* options)
 		MQTTAsync_lock_mutex(mqttasync_mutex);
 		sendThread_state = STARTING;
 #if defined(CONFIG_OS_FREERTOS)
-		Thread_start(MQTTAsync_sendThread, NULL, configMINIMAL_STACK_SIZE * 10, 0, NULL);
+		Thread_start(MQTTAsync_sendThread, NULL, configMINIMAL_STACK_SIZE * 10, 1, NULL);
 #else
 		Thread_start(MQTTAsync_sendThread, NULL);
 #endif
@@ -1980,7 +1980,7 @@ int MQTTAsync_connect(MQTTAsync handle, const MQTTAsync_connectOptions* options)
 		MQTTAsync_lock_mutex(mqttasync_mutex);
 		receiveThread_state = STARTING;
 #if defined(CONFIG_OS_FREERTOS)
-		Thread_start(MQTTAsync_receiveThread, NULL, configMINIMAL_STACK_SIZE * 10, 0, handle);
+		Thread_start(MQTTAsync_receiveThread, NULL, configMINIMAL_STACK_SIZE * 10, 1, handle);
 #else
 		Thread_start(MQTTAsync_receiveThread, handle);
 #endif
