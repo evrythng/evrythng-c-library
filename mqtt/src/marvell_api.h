@@ -3,6 +3,7 @@
 
 #include <stddef.h>
 #include <stdint.h>
+#include <string.h>
 #include <FreeRTOS.h>
 #include <task.h>
 
@@ -15,7 +16,6 @@
 #include <lwip/netdb.h>
 #include <lwip/err.h>
 #include <lwip/inet.h>
-#include <string.h>
 
 #define time_t uint32_t
 
@@ -27,6 +27,8 @@ struct iovec {
 	void *iov_base;   /* Starting address */
 	size_t iov_len;   /* Number of bytes */
 };
+
+#define realloc pvPortReAlloc
 
 #else
 
@@ -51,7 +53,6 @@ struct iovec {
 
 #define malloc pvPortMalloc
 #define free(ptr) vPortFree(ptr)
-#define realloc pvPortReAlloc
 
 #define difftime(t1, t0) (double)(t1 - t0)
 
