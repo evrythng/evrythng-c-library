@@ -293,7 +293,7 @@ int Socket_getReadySocket(int more_work, struct timeval *tp)
 
 		memcpy((void*)&wset, (void*)&(s.rset_saved), sizeof(wset));
 #if defined(FREERTOS_SIMULATOR)
-        struct timespec ts = {timeout.tv_sec, timeout.tv_usec*1000};
+        ts = (struct timespec){timeout.tv_sec, timeout.tv_usec*1000};
 		if ((rc1 = pselect(s.maxfdp1, NULL, &(wset), NULL, &ts, &sigmask)) == SOCKET_ERROR)
 #else
 		if ((rc1 = select(s.maxfdp1, NULL, &(wset), NULL, &timeout)) == SOCKET_ERROR)
