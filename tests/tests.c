@@ -9,8 +9,9 @@
 #include <time.h>
 #include <signal.h>
 
-//#define MQTT_BROKER_TCP_URL "tcp://mqtt.evrythng.com:1883"
-#define MQTT_BROKER_TCP_URL "tcp://localhost:1883"
+#define MQTT_BROKER_TCP_URL "tcp://mqtt.evrythng.com:1883"
+//#define MQTT_BROKER_TCP_URL "tcp://iot.eclipse.org:1883"
+//#define MQTT_BROKER_TCP_URL "tcp://localhost:1883"
 #define MQTT_BROKER_SSL_URL "ssl://localhost:8883"
 #define API_KEY     "HiX0xYZwULxR0GBWb9ZuQi8vTcPSndRxfnx9iIvw4u12Bdt6iMxkjwXujCkadQfBfTiV7kGLx80JPdGj"
 #define THNG_1      "UfFcGftssBpwrSQ8bmT7Ammr"

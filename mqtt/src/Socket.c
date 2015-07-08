@@ -244,16 +244,14 @@ int isReady(int socket, fd_set* read_set, fd_set* write_set)
 int Socket_getReadySocket(int more_work, struct timeval *tp)
 {
 	int rc = 0;
-	static struct timeval zero = {0L, 0L}; /* 0 seconds */
-	static struct timeval one = {1L, 0L}; /* 1 second */
-	struct timeval timeout = one;
+	struct timeval timeout;
 
 	FUNC_ENTRY;
 	if (s.clientsds->count == 0)
 		goto exit;
 
 	if (more_work)
-		timeout = zero;
+		timeout = (struct timeval){0L, 0L};
 	else if (tp)
 		timeout = *tp;
 
@@ -279,7 +277,7 @@ int Socket_getReadySocket(int more_work, struct timeval *tp)
         struct timespec ts = {timeout.tv_sec, timeout.tv_usec*1000};
 		if ((rc = pselect(s.maxfdp1, &(s.rset), &pwset, NULL, &ts, &sigmask)) == SOCKET_ERROR)
 #else
-		if ((rc = select(s.maxfdp1, &(s.rset), &pwset, NULL, &one)) == SOCKET_ERROR)
+		if ((rc = select(s.maxfdp1, &(s.rset), &pwset, NULL, &timeout)) == SOCKET_ERROR)
 #endif
 		{
 			Socket_error("read select", 0);
@@ -295,10 +293,10 @@ int Socket_getReadySocket(int more_work, struct timeval *tp)
 
 		memcpy((void*)&wset, (void*)&(s.rset_saved), sizeof(wset));
 #if defined(FREERTOS_SIMULATOR)
-        struct timespec ts_zero = {0};
-		if ((rc1 = pselect(s.maxfdp1, NULL, &(wset), NULL, &ts_zero, &sigmask)) == SOCKET_ERROR)
+        struct timespec ts = {timeout.tv_sec, timeout.tv_usec*1000};
+		if ((rc1 = pselect(s.maxfdp1, NULL, &(wset), NULL, &ts, &sigmask)) == SOCKET_ERROR)
 #else
-		if ((rc1 = select(s.maxfdp1, NULL, &(wset), NULL, &zero)) == SOCKET_ERROR)
+		if ((rc1 = select(s.maxfdp1, NULL, &(wset), NULL, &timeout)) == SOCKET_ERROR)
 #endif
 		{
 			Socket_error("write select", 0);
@@ -662,7 +660,7 @@ int Socket_new(char* addr, int port, int* sock)
 {
 	int type = SOCK_STREAM;
 	struct sockaddr_in address;
-#if defined(AF_INET6)
+#if defined(CONFIG_IPV6)
 	struct sockaddr_in6 address6;
 #endif
 	int rc = SOCKET_ERROR;
@@ -698,7 +696,7 @@ int Socket_new(char* addr, int port, int* sock)
 		if (result == NULL)
 			rc = -1;
 		else
-#if defined(AF_INET6)
+#if defined(CONFIG_IPV6)
 		if (result->ai_family == AF_INET6)
 		{
 			address6.sin6_port = htons(port);
@@ -745,7 +743,7 @@ int Socket_new(char* addr, int port, int* sock)
 				/* this could complete immmediately, even though we are non-blocking */
 				if (family == AF_INET)
 					rc = connect(*sock, (struct sockaddr*)&address, sizeof(address));
-	#if defined(AF_INET6)
+	#if defined(CONFIG_IPV6)
 				else
 					rc = connect(*sock, (struct sockaddr*)&address6, sizeof(address6));
 	#endif

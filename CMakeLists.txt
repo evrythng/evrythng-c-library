@@ -9,6 +9,7 @@ set(COMMON_PREFIX CMakeTimestamps)
 add_definitions(-DOPENSSL)
 add_definitions(-DNO_PERSISTENCE)
 add_definitions(-DNOSTACKTRACE)
+add_definitions(-DCONFIG_IPV6)
 
 include_directories(${PROJECT_SOURCE_DIR}/evrythng/include)
 include_directories(${PROJECT_SOURCE_DIR}/mqtt/src)
