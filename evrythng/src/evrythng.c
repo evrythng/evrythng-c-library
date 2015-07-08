@@ -129,7 +129,7 @@ void evrythng_destroy_handle(evrythng_handle_t handle)
     if (handle->client_id) free(handle->client_id);
 
     pub_callback_t **_pub_callback = &handle->pub_callbacks;
-    while(*_pub_callback) 
+    while (*_pub_callback) 
     {
         pub_callback_t* _pub_callback_tmp = *_pub_callback;
         _pub_callback = &(*_pub_callback)->next;
@@ -256,7 +256,7 @@ evrythng_return_t evrythng_set_qos(evrythng_handle_t handle, int qos)
 static evrythng_return_t add_sub_callback(evrythng_handle_t handle, char* topic, int qos, sub_callback *callback)
 {
     sub_callback_t **_sub_callbacks = &handle->sub_callbacks;
-    while(*_sub_callbacks) 
+    while (*_sub_callbacks) 
     {
         _sub_callbacks = &(*_sub_callbacks)->next;
     }
@@ -275,9 +275,41 @@ static evrythng_return_t add_sub_callback(evrythng_handle_t handle, char* topic,
     strcpy((*_sub_callbacks)->topic, topic);
     (*_sub_callbacks)->qos = qos;
     (*_sub_callbacks)->callback = callback;
-    (*_sub_callbacks)->next = NULL;
+    (*_sub_callbacks)->next = 0;
 
     return EVRYTHNG_SUCCESS;
+}
+
+
+static void rm_sub_callback(evrythng_handle_t handle, const char* topic)
+{
+    sub_callback_t *_sub_callback = handle->sub_callbacks;
+
+    if (!_sub_callback) 
+        return;
+
+    if (strcmp(_sub_callback->topic, topic) == 0) 
+    {
+        handle->sub_callbacks = _sub_callback->next;
+        free(_sub_callback->topic);
+        free(_sub_callback);
+        return;
+    }
+
+    while (_sub_callback->next) 
+    {
+        if (strcmp(_sub_callback->next->topic, topic) == 0) 
+        {
+            sub_callback_t* _sub_callback_tmp = _sub_callback->next;
+
+            _sub_callback->next = _sub_callback->next->next;
+
+            free(_sub_callback_tmp->topic);
+            free(_sub_callback_tmp);
+            continue;
+        }
+        _sub_callback = _sub_callback->next;
+    }
 }
 
 
@@ -302,7 +334,7 @@ static evrythng_return_t add_pub_callback(evrythng_handle_t handle, MQTTClient_d
 
     (*_pub_callbacks)->dt = dt;
     (*_pub_callbacks)->callback = callback;
-    (*_pub_callbacks)->next = NULL;
+    (*_pub_callbacks)->next = 0;
 
     return EVRYTHNG_SUCCESS;
 }
@@ -445,7 +477,7 @@ evrythng_return_t evrythng_connect_internal(evrythng_handle_t handle)
     debug("MQTT connected");
 
     sub_callback_t **_sub_callbacks = &handle->sub_callbacks;
-    while(*_sub_callbacks) 
+    while (*_sub_callbacks) 
     {
         int rc = MQTTClient_subscribe(handle->mqtt_client, (*_sub_callbacks)->topic, (*_sub_callbacks)->qos);
         if (rc == MQTTCLIENT_SUCCESS) 
@@ -477,7 +509,7 @@ evrythng_return_t evrythng_disconnect(evrythng_handle_t handle)
         return EVRYTHNG_SUCCESS;
 
     sub_callback_t **_sub_callbacks = &handle->sub_callbacks;
-    while(*_sub_callbacks) 
+    while (*_sub_callbacks) 
     {
         rc = MQTTClient_unsubscribe(handle->mqtt_client, (*_sub_callbacks)->topic);
         if (rc == MQTTCLIENT_SUCCESS) 
@@ -648,6 +680,67 @@ static evrythng_return_t evrythng_subscribe(
 }
 
 
+static evrythng_return_t evrythng_unsubscribe(
+        evrythng_handle_t handle, 
+        const char* entity, 
+        const char* entity_id, 
+        const char* data_type, 
+        const char* data_name)
+{
+    if (!MQTTClient_isConnected(handle->mqtt_client)) 
+    {
+        error("client is not connected");
+        return EVRYTHNG_NOT_CONNECTED;
+    }
+
+    int rc;
+    char unsub_topic[TOPIC_MAX_LEN];
+
+    if (entity_id == NULL) 
+    {
+        rc = snprintf(unsub_topic, TOPIC_MAX_LEN, "%s/%s", entity, data_name);
+        if (rc < 0 || rc >= TOPIC_MAX_LEN) 
+        {
+            debug("topic overflow");
+            return EVRYTHNG_BAD_ARGS;
+        }
+    } 
+    else if (data_name == NULL) 
+    {
+        rc = snprintf(unsub_topic, TOPIC_MAX_LEN, "%s/%s/%s", entity, entity_id, data_type);
+        if (rc < 0 || rc >= TOPIC_MAX_LEN) 
+        {
+            debug("topic overflow");
+            return EVRYTHNG_BAD_ARGS;
+        }
+    } 
+    else 
+    {
+        rc = snprintf(unsub_topic, TOPIC_MAX_LEN, "%s/%s/%s/%s", entity, entity_id, data_type, data_name);
+        if (rc < 0 || rc >= TOPIC_MAX_LEN) 
+        {
+            debug("topic overflow");
+            return EVRYTHNG_BAD_ARGS;
+        }
+    }
+
+    rm_sub_callback(handle, unsub_topic);
+
+    rc = MQTTClient_unsubscribe(handle->mqtt_client, unsub_topic);
+    if (rc == MQTTCLIENT_SUCCESS) 
+    {
+        debug("unsubscribed from %s", unsub_topic);
+    }
+    else 
+    {
+        error("unsubscription failed, rc=%d", rc);
+        return EVRYTHNG_UNSUBSCRIPTION_ERROR;
+    }
+
+    return EVRYTHNG_SUCCESS;
+}
+
+
 evrythng_return_t evrythng_publish_thng_property(
         evrythng_handle_t handle, 
         const char* thng_id, 
@@ -674,6 +767,17 @@ evrythng_return_t evrythng_subscribe_thng_property(
     return evrythng_subscribe(handle, "thngs", thng_id, "properties", property_name, callback);
 }
 
+evrythng_return_t evrythng_unsubscribe_thng_property(
+        evrythng_handle_t handle, 
+        const char* thng_id, 
+        const char* property_name)
+{
+    if (!thng_id || !property_name)
+        return EVRYTHNG_BAD_ARGS;
+
+    return evrythng_unsubscribe(handle, "thngs", thng_id, "properties", property_name);
+}
+
 
 evrythng_return_t evrythng_subscribe_thng_properties(
         evrythng_handle_t handle, 
@@ -684,6 +788,17 @@ evrythng_return_t evrythng_subscribe_thng_properties(
         return EVRYTHNG_BAD_ARGS;
 
     return evrythng_subscribe(handle, "thngs", thng_id, "properties", NULL, callback);
+}
+
+
+evrythng_return_t evrythng_unsubscribe_thng_properties(
+        evrythng_handle_t handle, 
+        const char* thng_id)
+{
+    if (!thng_id)
+        return EVRYTHNG_BAD_ARGS;
+
+    return evrythng_unsubscribe(handle, "thngs", thng_id, "properties", NULL);
 }
 
 
@@ -713,6 +828,18 @@ evrythng_return_t evrythng_subscribe_thng_action(
 }
 
 
+evrythng_return_t evrythng_unsubscribe_thng_action(
+        evrythng_handle_t handle, 
+        const char* thng_id, 
+        const char* action_name)
+{
+    if (!thng_id || !action_name)
+        return EVRYTHNG_BAD_ARGS;
+
+    return evrythng_unsubscribe(handle, "thngs", thng_id, "actions", action_name);
+}
+
+
 evrythng_return_t evrythng_subscribe_thng_actions(
         evrythng_handle_t handle, 
         const char* thng_id, 
@@ -722,6 +849,17 @@ evrythng_return_t evrythng_subscribe_thng_actions(
         return EVRYTHNG_BAD_ARGS;
 
     return evrythng_subscribe(handle, "thngs", thng_id, "actions", "all", callback);
+}
+
+
+evrythng_return_t evrythng_unsubscribe_thng_actions(
+        evrythng_handle_t handle, 
+        const char* thng_id)
+{
+    if (!thng_id)
+        return EVRYTHNG_BAD_ARGS;
+
+    return evrythng_unsubscribe(handle, "thngs", thng_id, "actions", "all");
 }
 
 
@@ -764,6 +902,17 @@ evrythng_return_t evrythng_subscribe_thng_location(
 }
 
 
+evrythng_return_t evrythng_unsubscribe_thng_location(
+        evrythng_handle_t handle, 
+        const char* thng_id)
+{
+    if (!thng_id)
+        return EVRYTHNG_BAD_ARGS;
+
+    return evrythng_unsubscribe(handle, "thngs", thng_id, "location", NULL);
+}
+
+
 evrythng_return_t evrythng_publish_thng_location(
         evrythng_handle_t handle, 
         const char* thng_id, 
@@ -790,6 +939,18 @@ evrythng_return_t evrythng_subscribe_product_property(
 }
 
 
+evrythng_return_t evrythng_unsubscribe_product_property(
+        evrythng_handle_t handle, 
+        const char* product_id, 
+        const char* property_name)
+{
+    if (!product_id || !property_name)
+        return EVRYTHNG_BAD_ARGS;
+
+    return evrythng_unsubscribe(handle, "products", product_id, "properties", property_name);
+}
+
+
 evrythng_return_t evrythng_subscribe_product_properties(
         evrythng_handle_t handle, 
         const char* product_id, 
@@ -799,6 +960,17 @@ evrythng_return_t evrythng_subscribe_product_properties(
         return EVRYTHNG_BAD_ARGS;
 
     return evrythng_subscribe(handle, "products", product_id, "properties", NULL, callback);
+}
+
+
+evrythng_return_t evrythng_unsubscribe_product_properties(
+        evrythng_handle_t handle, 
+        const char* product_id)
+{
+    if (!product_id)
+        return EVRYTHNG_BAD_ARGS;
+
+    return evrythng_unsubscribe(handle, "products", product_id, "properties", NULL);
 }
 
 
@@ -842,6 +1014,18 @@ evrythng_return_t evrythng_subscribe_product_action(
 }
 
 
+evrythng_return_t evrythng_unsubscribe_product_action(
+        evrythng_handle_t handle, 
+        const char* product_id, 
+        const char* action_name)
+{
+    if (!product_id || !action_name)
+        return EVRYTHNG_BAD_ARGS;
+
+    return evrythng_unsubscribe(handle, "products", product_id, "actions", action_name);
+}
+
+
 evrythng_return_t evrythng_subscribe_product_actions(
         evrythng_handle_t handle, 
         const char* product_id, 
@@ -851,6 +1035,17 @@ evrythng_return_t evrythng_subscribe_product_actions(
         return EVRYTHNG_BAD_ARGS;
 
     return evrythng_subscribe(handle, "products", product_id, "actions", "all", callback);
+}
+
+
+evrythng_return_t evrythng_unsubscribe_product_actions(
+        evrythng_handle_t handle, 
+        const char* product_id)
+{
+    if (!product_id)
+        return EVRYTHNG_BAD_ARGS;
+
+    return evrythng_unsubscribe(handle, "products", product_id, "actions", "all");
 }
 
 
@@ -893,12 +1088,29 @@ evrythng_return_t evrythng_subscribe_action(
 }
 
 
+evrythng_return_t evrythng_unsubscribe_action(
+        evrythng_handle_t handle, 
+        const char* action_name)
+{
+    if (!action_name)
+        return EVRYTHNG_BAD_ARGS;
+
+    return evrythng_unsubscribe(handle, "actions", NULL, NULL, action_name);
+}
+
+
 evrythng_return_t evrythng_subscribe_actions(evrythng_handle_t handle, sub_callback *callback)
 {
     if (!callback)
         return EVRYTHNG_BAD_ARGS;
 
     return evrythng_subscribe(handle, "actions", NULL, NULL, "all", callback);
+}
+
+
+evrythng_return_t evrythng_unsubscribe_actions(evrythng_handle_t handle)
+{
+    return evrythng_unsubscribe(handle, "actions", NULL, NULL, "all");
 }
 
 

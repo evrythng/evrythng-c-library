@@ -246,6 +246,56 @@ int sem_timed_wait(sem_t* sem)
     evrythng_destroy_handle(h1);\
     evrythng_destroy_handle(h2);
 
+
+#define START_SINGLE_CONNECTION \
+    evrythng_handle_t h1;\
+    common_tcp_init_handle(&h1);\
+    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, evrythng_connect(h1));
+
+#define END_SINGLE_CONNECTION \
+    evrythng_disconnect(h1);\
+    evrythng_destroy_handle(h1);
+
+void test_subunsub_thng(CuTest* tc)
+{
+    START_SINGLE_CONNECTION
+    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, evrythng_subscribe_thng_action(h1, THNG_1, ACTION_1, test_sub_callback));
+    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, evrythng_subscribe_thng_action(h1, THNG_1, ACTION_2, test_sub_callback));
+    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, evrythng_unsubscribe_thng_action(h1, THNG_1, ACTION_2));
+    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, evrythng_subscribe_thng_property(h1, THNG_1, PROPERTY_1, test_sub_callback));
+    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, evrythng_unsubscribe_thng_property(h1, THNG_1, PROPERTY_1));
+    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, evrythng_subscribe_thng_property(h1, THNG_1, PROPERTY_1, test_sub_callback));
+    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, evrythng_subscribe_thng_property(h1, THNG_1, PROPERTY_2, test_sub_callback));
+    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, evrythng_unsubscribe_thng_property(h1, THNG_1, PROPERTY_1));
+    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, evrythng_subscribe_thng_properties(h1, THNG_1, test_sub_callback));
+    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, evrythng_unsubscribe_thng_properties(h1, THNG_1));
+    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, evrythng_subscribe_thng_actions(h1, THNG_1, test_sub_callback));
+    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, evrythng_unsubscribe_thng_actions(h1, THNG_1));
+    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, evrythng_subscribe_thng_location(h1, THNG_1, test_sub_callback));
+    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, evrythng_unsubscribe_thng_location(h1, THNG_1));
+    END_SINGLE_CONNECTION
+}
+
+void test_subunsub_prod(CuTest* tc)
+{
+    START_SINGLE_CONNECTION
+    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, evrythng_subscribe_product_property(h1, PRODUCT_1, PROPERTY_1, test_sub_callback));
+    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, evrythng_subscribe_product_property(h1, PRODUCT_1, PROPERTY_2, test_sub_callback));
+    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, evrythng_unsubscribe_product_property(h1, PRODUCT_1, PROPERTY_1));
+    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, evrythng_unsubscribe_product_property(h1, PRODUCT_1, PROPERTY_2));
+    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, evrythng_subscribe_product_properties(h1, PRODUCT_1, test_sub_callback));
+    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, evrythng_unsubscribe_product_properties(h1, PRODUCT_1));
+    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, evrythng_subscribe_product_action(h1, PRODUCT_1, ACTION_1, test_sub_callback));
+    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, evrythng_subscribe_product_action(h1, PRODUCT_1, ACTION_2, test_sub_callback));
+    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, evrythng_unsubscribe_product_action(h1, PRODUCT_1, ACTION_2));
+    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, evrythng_subscribe_product_actions(h1, PRODUCT_1, test_sub_callback));
+    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, evrythng_unsubscribe_product_actions(h1, PRODUCT_1));
+    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, evrythng_subscribe_action(h1, ACTION_1, test_sub_callback));
+    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, evrythng_subscribe_action(h1, ACTION_2, test_sub_callback));
+    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, evrythng_unsubscribe_action(h1, ACTION_2));
+    END_SINGLE_CONNECTION
+}
+
 void test_pubsub_thng_prop(CuTest* tc)
 {
     START_PUBSUB
@@ -355,6 +405,9 @@ CuSuite* CuGetSuite(void)
 	SUITE_ADD_TEST(suite, test_tcp_connect_ok1);
 	SUITE_ADD_TEST(suite, test_tcp_connect_ok2);
 	SUITE_ADD_TEST(suite, test_tcp_connect_ok3);
+
+	SUITE_ADD_TEST(suite, test_subunsub_thng);
+	SUITE_ADD_TEST(suite, test_subunsub_prod);
 
 	SUITE_ADD_TEST(suite, test_pubsub_thng_prop);
 	SUITE_ADD_TEST(suite, test_pubsuball_thng_prop);

@@ -26,6 +26,7 @@
 
 typedef enum _evrythng_return_t 
 {
+    EVRYTHNG_UNSUBSCRIPTION_ERROR= -10,
     EVRYTHNG_SUBSCRIPTION_ERROR  = -9,
     EVRYTHNG_PUBLISH_ERROR       = -8,
     EVRYTHNG_NOT_CONNECTED       = -7,
@@ -289,6 +290,26 @@ evrythng_return_t evrythng_subscribe_thng_property(
         sub_callback *callback);
 
 
+/** @brief Unsubscribe a client from a single property of the thing.
+ *
+ * This function unsubscribes a client from a single property of the thing. 
+ *  
+ * @param[in] handle        A context handle.
+ * @param[in] thng_id       A thing ID.
+ * @param[in] property_name The name of the property. 
+ *
+ * @return    \b EVRYTHNG_BAD_ARGS if one the arguments is a null pointer or a too long string \n
+ *            \b EVRYTHNG_UNSUBSCRIPTION_ERROR if an error occured trying to unsubscribe from a topic \n
+ *            \b EVRYTHNG_NOT_CONNECTED if internal context is not in connected state \n
+ *            \b EVRYTHNG_SUCCESS on success \n
+ */
+evrythng_return_t evrythng_unsubscribe_thng_property(
+        evrythng_handle_t handle, 
+        const char* thng_id, 
+        const char* property_name);
+
+
+
 /** @brief Subscribe to all properties of the thing.
  * 
  * This function subscribes to all properties of the thing.
@@ -307,6 +328,23 @@ evrythng_return_t evrythng_subscribe_thng_properties(
         evrythng_handle_t handle, 
         const char* thng_id, 
         sub_callback *callback);
+
+
+/** @brief Unsubscribe a client from all properties of the thing.
+ * 
+ * This function attempts to unsubscribe a client from all properties of the thing. 
+ *
+ * @param[in] handle   A context handle.
+ * @param[in] thng_id  A thing ID. 
+ *
+ * @return    \b EVRYTHNG_BAD_ARGS if one the arguments is a null pointer or a too long string \n
+ *            \b EVRYTHNG_UNSUBSCRIPTION_ERROR if an error occured trying to unsubscribe from a topic \n
+ *            \b EVRYTHNG_NOT_CONNECTED if internal context is not in connected state \n
+ *            \b EVRYTHNG_SUCCESS on success \n
+ */
+evrythng_return_t evrythng_unsubscribe_thng_properties(
+        evrythng_handle_t handle, 
+        const char* thng_id);
 
 
 /** @brief Publish a few properties to a given thing.
@@ -353,6 +391,25 @@ evrythng_return_t evrythng_subscribe_thng_action(
         sub_callback *callback);
 
 
+/** @brief Unsubscribe a client from a single action of the thing.
+ *
+ * This function unsubscribes a client from a single action of the thing. 
+ *
+ * @param[in] handle      A context handle.
+ * @param[in] thng_id     A thing ID.
+ * @param[in] action_name The name of an action. 
+ *
+ * @return    \b EVRYTHNG_BAD_ARGS if one the arguments is a null pointer or a too long string \n
+ *            \b EVRYTHNG_UNSUBSCRIPTION_ERROR if an error occured trying to unsubscribe from a topic \n
+ *            \b EVRYTHNG_NOT_CONNECTED if internal context is not in connected state \n
+ *            \b EVRYTHNG_SUCCESS on success \n
+ */
+evrythng_return_t evrythng_unsubscribe_thng_action(
+        evrythng_handle_t handle, 
+        const char* thng_id, 
+        const char* action_name);
+
+
 /** @brief Subscribe to all actions of the thing.
  *
  * This function attempts to subscribe to all actions of the thing.
@@ -371,6 +428,23 @@ evrythng_return_t evrythng_subscribe_thng_actions(
         evrythng_handle_t handle, 
         const char* thng_id, 
         sub_callback *callback);
+
+
+/** @brief Unsubscribe a client from all actions of the thing.
+ *
+ * This function unsubscribes a client from all actions of the thing. 
+ *
+ * @param[in] handle   A context handle.
+ * @param[in] thng_id  A thing ID. 
+ *
+ * @return    \b EVRYTHNG_BAD_ARGS if one the arguments is a null pointer or a too long string \n
+ *            \b EVRYTHNG_UNSUBSCRIPTION_ERROR if an error occured trying to unsubscribe from a topic \n
+ *            \b EVRYTHNG_NOT_CONNECTED if internal context is not in connected state \n
+ *            \b EVRYTHNG_SUCCESS on success \n
+ */
+evrythng_return_t evrythng_unsubscribe_thng_actions(
+        evrythng_handle_t handle, 
+        const char* thng_id);
 
 
 /** @brief Publish a single action to a given thing. 
@@ -439,6 +513,23 @@ evrythng_return_t evrythng_subscribe_thng_location(
         sub_callback *callback);
 
 
+/** @brief Unsubscribe a client from a location of the thing.
+ *
+ * This function unsubscribes a client from a location of the thing. 
+ *
+ * @param[in] handle     A context handle.
+ * @param[in] thng_id    A thing ID. 
+ *
+ * @return    \b EVRYTHNG_BAD_ARGS if one the arguments is a null pointer or a too long string \n
+ *            \b EVRYTHNG_UNSUBSCRIPTION_ERROR if an error occured trying to unsubscribe from a topic \n
+ *            \b EVRYTHNG_NOT_CONNECTED if internal context is not in connected state \n
+ *            \b EVRYTHNG_SUCCESS on success \n
+ */
+evrythng_return_t evrythng_unsubscribe_thng_location(
+        evrythng_handle_t handle, 
+        const char* thng_id);
+
+
 /** @brief Publish a location to a given thing.
  *
  * This function attempts to publish a location to a given thing.
@@ -483,6 +574,26 @@ evrythng_return_t evrythng_subscribe_product_property(
         sub_callback *callback);
 
 
+/** @brief Unsubscribe from a single property of the product.
+ *
+ * This function unsubscribes to a single property of the product.
+ *
+ * @param[in] handle        A context handle.
+ * @param[in] product_id    A product ID.
+ * @param[in] property_name The name of the property. 
+ *
+ * @return    \b EVRYTHNG_BAD_ARGS if one the arguments is a null pointer or a too long string \n
+ *            \b EVRYTHNG_UNSUBSCRIPTION_ERROR if an error occured trying to unsubscribe from a topic \n
+ *            \b EVRYTHNG_NOT_CONNECTED if internal context is not in connected state \n
+ *            \b EVRYTHNG_SUCCESS on success \n
+ */
+evrythng_return_t evrythng_unsubscribe_product_property(
+        evrythng_handle_t handle, 
+        const char* product_id, 
+        const char* property_name);
+
+
+
 /** @brief Subscribe to all properties of the product.
  *
  * This function attempts to subscribe to all properties of the product.
@@ -501,6 +612,23 @@ evrythng_return_t evrythng_subscribe_product_properties(
         evrythng_handle_t handle, 
         const char* product_id, 
         sub_callback *callback);
+
+
+/** @brief Unsubscribe from all properties of the product.
+ *
+ * This function unsubscribes from all properties of the product.
+ *
+ * @param[in] handle        A context handle.
+ * @param[in] product_id    A product ID.
+ *
+ * @return    \b EVRYTHNG_BAD_ARGS if one the arguments is a null pointer or a too long string \n
+ *            \b EVRYTHNG_UNSUBSCRIPTION_ERROR if an error occured trying to unsubscribe from a topic \n
+ *            \b EVRYTHNG_NOT_CONNECTED if internal context is not in connected state \n
+ *            \b EVRYTHNG_SUCCESS on success \n
+ */
+evrythng_return_t evrythng_unsubscribe_product_properties(
+        evrythng_handle_t handle, 
+        const char* product_id);
 
 
 /** @brief Publish a single property to a given product.
@@ -571,6 +699,25 @@ evrythng_return_t evrythng_subscribe_product_action(
         sub_callback *callback);
 
 
+/** @brief Unsubscribe from a single action of the product.
+ *
+ * This function unsubscribes from a single action of the product.
+ *
+ * @param[in] handle      A context handle.
+ * @param[in] product_id  A product ID.
+ * @param[in] action_name The name of an action. 
+ *
+ * @return    \b EVRYTHNG_BAD_ARGS if one the arguments is a null pointer or a too long string \n
+ *            \b EVRYTHNG_UNSUBSCRIPTION_ERROR if an error occured trying to unsubscribe from a topic \n
+ *            \b EVRYTHNG_NOT_CONNECTED if internal context is not in connected state \n
+ *            \b EVRYTHNG_SUCCESS on success \n
+ */
+evrythng_return_t evrythng_unsubscribe_product_action(
+        evrythng_handle_t handle, 
+        const char* product_id, 
+        const char* action_name);
+
+
 /** @brief Subscribe to all actions of the product.
  *
  * This function attempts to subscribe to all actions of the product.
@@ -589,6 +736,23 @@ evrythng_return_t evrythng_subscribe_product_actions(
         evrythng_handle_t handle, 
         const char* product_id, 
         sub_callback *callback);
+
+
+/** @brief Unsubscribe from all actions of the product.
+ *
+ * This function unsubscribes from all actions of the product.
+ *
+ * @param[in] handle      A context handle.
+ * @param[in] product_id  A product ID.
+ *
+ * @return    \b EVRYTHNG_BAD_ARGS if one the arguments is a null pointer or a too long string \n
+ *            \b EVRYTHNG_UNSUBSCRIPTION_ERROR if an error occured trying to unsubscribe from a topic \n
+ *            \b EVRYTHNG_NOT_CONNECTED if internal context is not in connected state \n
+ *            \b EVRYTHNG_SUCCESS on success \n
+ */
+evrythng_return_t evrythng_unsubscribe_product_actions(
+        evrythng_handle_t handle, 
+        const char* product_id);
 
 
 /** @brief Publish a single action to a given product.
@@ -657,6 +821,23 @@ evrythng_return_t evrythng_subscribe_action(
         sub_callback *callback);
 
 
+/** @brief Unsubscribe from a single action.
+ *
+ * This function unsubscribes from a single action.
+ *
+ * @param[in] handle      A context handle.
+ * @param[in] action_name The name of an action. 
+ *
+ * @return    \b EVRYTHNG_BAD_ARGS if one the arguments is a null pointer or a too long string \n
+ *            \b EVRYTHNG_UNSUBSCRIPTION_ERROR if an error occured trying to unsubscribe from a topic \n
+ *            \b EVRYTHNG_NOT_CONNECTED if internal context is not in connected state \n
+ *            \b EVRYTHNG_SUCCESS on success \n
+ */
+evrythng_return_t evrythng_unsubscribe_action(
+        evrythng_handle_t handle, 
+        const char* action_name);
+
+
 /** @brief Subscribe to all actions.
  *
  * This function attempts to subscribe to all actions.
@@ -673,6 +854,21 @@ evrythng_return_t evrythng_subscribe_action(
 evrythng_return_t evrythng_subscribe_actions(
         evrythng_handle_t handle, 
         sub_callback *callback);
+
+
+/** @brief Unsubscribe from all actions.
+ *
+ * This function unsubscribes from all actions.
+ *
+ * @param[in] handle      A context handle.
+ *
+ * @return    \b EVRYTHNG_BAD_ARGS if one the arguments is a null pointer or a too long string \n
+ *            \b EVRYTHNG_UNSUBSCRIPTION_ERROR if an error occured trying to unsubscribe from a topic \n
+ *            \b EVRYTHNG_NOT_CONNECTED if internal context is not in connected state \n
+ *            \b EVRYTHNG_SUCCESS on success \n
+ */
+evrythng_return_t evrythng_unsubscribe_actions(
+        evrythng_handle_t handle);
 
 
 /** @brief Publish a single action.
