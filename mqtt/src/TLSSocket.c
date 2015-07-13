@@ -42,7 +42,6 @@
 void TLSSocket_addPendingRead(int sock);
 static mutex_type tlsCoreMutex;
 extern Sockets s;
-int TLSInitSuccessFlag = 0;
 /**
  * Gets the specific error corresponding to SOCKET_ERROR
  * @param aString the function that was being used when the error occurred
@@ -119,10 +118,6 @@ int TLSSocket_connect(tls_handle_t *h, int sockfd, const tls_init_config_t *cfg)
 		if (SOCKET_ERROR == rc)
 		{
 			Log(TRACE_MIN, -1, "TLSSocket_connect tls_session_init error");
-		}
-		else
-		{
-			TLSInitSuccessFlag = 1;
 		}
 	}
 
@@ -235,10 +230,9 @@ int TLSSocket_close(tls_handle_t *h)
 {
 	FUNC_ENTRY;
 
-	if ((NULL != h) && (0 != *h) && TLSInitSuccessFlag)
+	if ((NULL != h) && (0 != *h))
 	{
 		tls_close(h);
-		TLSInitSuccessFlag = 0;
 	}
 
 	FUNC_EXIT_RC(rc);

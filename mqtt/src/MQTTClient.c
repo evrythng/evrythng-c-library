@@ -844,7 +844,7 @@ int MQTTClient_connectURIVersion(MQTTClient handle, MQTTClient_connectOptions* o
 	if (m->ma && !running)
 	{
 #if defined(CONFIG_OS_FREERTOS)
-		Thread_start(MQTTClient_run, "MQTTClient_run", configMINIMAL_STACK_SIZE * 5, 1, handle);
+		Thread_start(MQTTClient_run, "MQTTClient_run", configMINIMAL_STACK_SIZE * 5, 0, handle);
 #else
 		Thread_start(MQTTClient_run, handle);
 #endif
@@ -1319,11 +1319,53 @@ exit:
 	{
 		Log(TRACE_MIN, -1, "Calling connectionLost for client %s", m->c->clientID);
 #if defined(CONFIG_OS_FREERTOS)
-		Thread_start(connectionLost_call, "connectionLost_call", configMINIMAL_STACK_SIZE * 10, 1, m);
+		Thread_start(connectionLost_call, "connectionLost_call", configMINIMAL_STACK_SIZE * 10, 0, m);
 #else
 		Thread_start(connectionLost_call, m);
 #endif
+
 	}
+
+	if (m->c->will)
+	{
+		free(m->c->will->msg);
+		free(m->c->will->topic);
+		free(m->c->will);
+		m->c->will = NULL;
+	}
+
+#if defined(OPENSSL)
+	if (m->c->sslopts)
+	{
+		if (m->c->sslopts->trustStore)
+			free((void*)m->c->sslopts->trustStore);
+		if (m->c->sslopts->keyStore)
+			free((void*)m->c->sslopts->keyStore);
+		if (m->c->sslopts->privateKey)
+			free((void*)m->c->sslopts->privateKey);
+		if (m->c->sslopts->privateKeyPassword)
+			free((void*)m->c->sslopts->privateKeyPassword);
+		if (m->c->sslopts->enabledCipherSuites)
+			free((void*)m->c->sslopts->enabledCipherSuites);
+		free(m->c->sslopts);
+		m->c->sslopts = NULL;
+	}
+#endif
+
+#if defined(TLSSOCKET)
+	if (m->c->cfg)
+	{
+		if (m->c->cfg->tls.client.ca_cert)
+			free((void*)m->c->cfg->tls.client.ca_cert);
+		if (m->c->cfg->tls.client.client_cert)
+			free((void*)m->c->cfg->tls.client.client_cert);
+		if (m->c->cfg->tls.client.client_key)
+			free((void*)m->c->cfg->tls.client.client_key);
+		free(m->c->cfg);
+		m->c->cfg = NULL;
+	}
+#endif
+
 	Thread_unlock_mutex(mqttclient_mutex);
 	FUNC_EXIT_RC(rc);
 	return rc;

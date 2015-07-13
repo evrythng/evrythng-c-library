@@ -1,9 +1,6 @@
-#include <assert.h>
 #include <setjmp.h>
-#include <stdlib.h>
-#include <stdio.h>
 #include <string.h>
-#include <math.h>
+#include <stdio.h>
 
 #include "CuTest.h"
 
@@ -215,7 +212,9 @@ void CuAssertDblEquals_LineMsg(CuTest* tc, const char* file, int line, const cha
 	double expected, double actual, double delta)
 {
 	char buf[STRING_MAX];
-	if (fabs(expected - actual) <= delta) return;
+    double tmp = (expected - actual);
+    if (tmp < 0) tmp *= -1;
+	if (tmp <= delta) return;
 	sprintf(buf, "expected <%f> but was <%f>", expected, actual); 
 
 	CuFail_Line(tc, file, line, message, buf);
@@ -265,7 +264,6 @@ void CuSuiteDelete(CuSuite *testSuite)
 
 void CuSuiteAdd(CuSuite* testSuite, CuTest *testCase)
 {
-	assert(testSuite->count < MAX_TEST_CASES);
 	testSuite->list[testSuite->count] = testCase;
 	testSuite->count++;
 }

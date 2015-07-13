@@ -65,31 +65,6 @@ static void evrythng_log(evrythng_handle_t handle, evrythng_log_level_t level, c
 #define error(fmt, ...) evrythng_log(handle, EVRYTHNG_LOG_ERROR, fmt,  ##__VA_ARGS__);
 
 
-void default_log_callback(evrythng_log_level_t level, const char* fmt, va_list vl)
-{
-    char msg[128];
-
-    unsigned n = vsnprintf(msg, sizeof msg, fmt, vl);
-    if (n >= sizeof msg)
-        msg[sizeof msg - 1] = '\0';
-
-    switch (level)
-    {
-        case EVRYTHNG_LOG_ERROR:
-            printf("ERROR: ");
-            break;
-        case EVRYTHNG_LOG_WARNING:
-            printf("WARNING: ");
-            break;
-        default:
-        case EVRYTHNG_LOG_DEBUG:
-            printf("DEBUG: ");
-            break;
-    }
-    printf("%s\n", msg);
-}
-
-
 evrythng_return_t evrythng_init_handle(evrythng_handle_t* handle)
 {
     if (!handle) 
@@ -110,6 +85,7 @@ evrythng_return_t evrythng_init_handle(evrythng_handle_t* handle)
     (*handle)->mqtt_conn_opts.cleansession = 1;
     (*handle)->mqtt_conn_opts.struct_version = 1;
     (*handle)->mqtt_conn_opts.username = USERNAME;
+    (*handle)->mqtt_conn_opts.connectTimeout = 60;
     (*handle)->qos = 1;
     (*handle)->log_callback = 0;
     (*handle)->conlost_callback = 0;

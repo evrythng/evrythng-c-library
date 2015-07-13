@@ -16,11 +16,12 @@
 #define malloc      pvPortMalloc
 #define free(ptr)   vPortFree(ptr)
 #define sleep(sec)  vTaskDelay((sec*1000)/portTICK_RATE_MS);
+#define realloc     pvPortReAlloc
 
 #else
 
 #include <unistd.h>
-#include <stdio.h>
+#include <stdlib.h>
 
 #endif
 

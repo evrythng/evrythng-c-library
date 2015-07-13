@@ -53,11 +53,6 @@ typedef enum
 typedef void (*evrythng_log_callback)(evrythng_log_level_t level, const char* fmt, va_list vl); 
 
 
-/** @brief Default callback using stdout to print messages. Output buffer is limited to 128 characters.
- */
-void default_log_callback(evrythng_log_level_t level, const char* fmt, va_list vl);
-
-
 /** @brief Pointer to internal context used by all the functions.
  */
 typedef struct evrythng_ctx_t* evrythng_handle_t;

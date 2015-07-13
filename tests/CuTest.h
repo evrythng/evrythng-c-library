@@ -1,6 +1,8 @@
 #ifndef CU_TEST_H
 #define CU_TEST_H
 
+#include "platform.h"
+
 #include <setjmp.h>
 #include <stdarg.h>
 
