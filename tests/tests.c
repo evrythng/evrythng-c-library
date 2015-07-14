@@ -1,24 +1,5 @@
 #include "evrythng.h"
-
-#if defined(CONFIG_OS_FREERTOS)
-
-#include "FreeRTOS.h"
-#include "task.h"
-
-#include <semphr.h>
-#include <wmstdio.h>
-#include <marvell_api.h>
-
-#else
-
-#include <semaphore.h>
-#include <unistd.h>
-#include <time.h>
-#include <errno.h>
-#include <signal.h>
-#include <stdio.h>
-
-#endif
+#include "platform.h"
 
 #include <string.h>
 #include "CuTest.h"
@@ -42,19 +23,12 @@
 
 #define PROPERTY_VALUE_JSON "[{\"value\": 500}]"
 #define PROPERTIES_VALUE_JSON "[{\"key\": \"property_1\", \"value\": 500}, {\"key\": \"property_2\", \"value\": 100}]"
-
 #define ACTION_JSON "{\"type\": \"_action_1\"}"
-
 #define LOCATION_JSON  "[{\"position\": { \"type\": \"Point\", \"coordinates\": [-17.3, 36] }}]"
 
 
-#if defined(CONFIG_OS_FREERTOS)
-
-#define printf wmprintf
-
-#endif
-
 #if defined(FREERTOS_SIMULATOR)
+#include <unistd.h>
 /* This is application idle hook which is used by FreeRTOS */
 void vApplicationIdleHook(void)
 {
@@ -63,10 +37,11 @@ void vApplicationIdleHook(void)
 #endif
 
 
-#if defined(CONFIG_OS_FREERTOS)
+#if defined(CONFIG_OS_FREERTOS) && !defined(FREERTOS_SIMULATOR)
 xSemaphoreHandle pub_sem;
 xSemaphoreHandle sub_sem;
 #else
+#include <semaphore.h>
 sem_t pub_sem;
 sem_t sub_sem;
 #endif
@@ -252,7 +227,7 @@ void test_tcp_connect_ok3(CuTest* tc)
 static void test_pub_callback()
 {
     printf("%s: message published\n\r", __func__);
-#if defined(CONFIG_OS_FREERTOS)
+#if defined(CONFIG_OS_FREERTOS) && !defined(FREERTOS_SIMULATOR)
     xSemaphoreGive(pub_sem);
 #else
     sem_post(&pub_sem);
@@ -263,14 +238,14 @@ static void test_sub_callback(const char* str_json, size_t len)
 {
     char msg[len+1]; snprintf(msg, sizeof msg, "%s", str_json);
     printf("%s: %s\n\r", __func__, msg);
-#if defined(CONFIG_OS_FREERTOS)
+#if defined(CONFIG_OS_FREERTOS) && !defined(FREERTOS_SIMULATOR)
     xSemaphoreGive(sub_sem);
 #else
     sem_post(&sub_sem);
 #endif
 }
 
-#if defined(CONFIG_OS_FREERTOS)
+#if defined(CONFIG_OS_FREERTOS) && !defined(FREERTOS_SIMULATOR)
 int sem_timed_wait(xSemaphoreHandle* sem)
 {
     if (xSemaphoreTake(*sem, configTICK_RATE_HZ * 10) == pdTRUE)
@@ -331,7 +306,7 @@ int sem_timed_wait(sem_t* sem)
     PRINT_END_MEM_STATS
 
 
-#if defined(CONFIG_OS_FREERTOS)
+#if defined(CONFIG_OS_FREERTOS) && !defined(FREERTOS_SIMULATOR)
 #define PRINT_START_MEM_STATS \
     const heapAllocatorInfo_t* s1 = getheapAllocInfo();\
     wmprintf(">>>>>> %d/%d\n\r", s1->freeSize, s1->heapSize);
@@ -339,7 +314,7 @@ int sem_timed_wait(sem_t* sem)
 #define PRINT_START_MEM_STATS
 #endif
 
-#if defined(CONFIG_OS_FREERTOS)
+#if defined(CONFIG_OS_FREERTOS) && !defined(FREERTOS_SIMULATOR)
 #define PRINT_END_MEM_STATS \
     const heapAllocatorInfo_t* s2 = getheapAllocInfo();\
     wmprintf("<<<<<< %d/%d\n\r", s2->freeSize, s2->heapSize);
@@ -522,7 +497,7 @@ CuSuite* CuGetSuite(void)
 
 void RunAllTests(void* v)
 {
-#if defined(CONFIG_OS_FREERTOS)
+#if defined(CONFIG_OS_FREERTOS) && !defined(FREERTOS_SIMULATOR)
     vSemaphoreCreateBinary(pub_sem);
     vSemaphoreCreateBinary(sub_sem);
 #else
