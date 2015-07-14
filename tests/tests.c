@@ -70,6 +70,52 @@ void log_callback(evrythng_log_level_t level, const char* fmt, va_list vl)
     printf("%s\n\r", msg);
 }
 
+#define START_PUBSUB \
+    PRINT_START_MEM_STATS \
+    evrythng_handle_t h1;\
+    evrythng_handle_t h2;\
+    common_tcp_init_handle(&h1);\
+    common_tcp_init_handle(&h2);\
+    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, evrythng_connect(h1));\
+    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, evrythng_connect(h2));
+
+#define END_PUBSUB \
+    CuAssertIntEquals(tc, 0, sem_timed_wait(&pub_sem));\
+    CuAssertIntEquals(tc, 0, sem_timed_wait(&sub_sem));\
+    evrythng_disconnect(h1);\
+    evrythng_disconnect(h2);\
+    evrythng_destroy_handle(h1);\
+    evrythng_destroy_handle(h2);\
+    PRINT_END_MEM_STATS
+
+
+#define START_SINGLE_CONNECTION \
+    PRINT_START_MEM_STATS \
+    evrythng_handle_t h1;\
+    common_tcp_init_handle(&h1);\
+    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, evrythng_connect(h1));
+
+#define END_SINGLE_CONNECTION \
+    evrythng_disconnect(h1);\
+    evrythng_destroy_handle(h1);\
+    PRINT_END_MEM_STATS
+
+
+#if defined(CONFIG_OS_FREERTOS) && !defined(FREERTOS_SIMULATOR)
+#define PRINT_START_MEM_STATS \
+    const heapAllocatorInfo_t* s1 = getheapAllocInfo();\
+    wmprintf(">>>>>> %d/%d\n\r", s1->freeSize, s1->heapSize);
+#else
+#define PRINT_START_MEM_STATS
+#endif
+
+#if defined(CONFIG_OS_FREERTOS) && !defined(FREERTOS_SIMULATOR)
+#define PRINT_END_MEM_STATS \
+    const heapAllocatorInfo_t* s2 = getheapAllocInfo();\
+    wmprintf("<<<<<< %d/%d\n\r", s2->freeSize, s2->heapSize);
+#else
+#define PRINT_END_MEM_STATS 
+#endif
 
 
 void test_init_handle_ok(CuTest* tc)
@@ -198,30 +244,24 @@ void test_tcp_connect_ok1(CuTest* tc)
 
 void test_tcp_connect_ok2(CuTest* tc)
 {
-    evrythng_handle_t h;
-    common_tcp_init_handle(&h);
-    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, evrythng_connect(h));
-    evrythng_disconnect(h);
-    evrythng_destroy_handle(h);
+    START_SINGLE_CONNECTION
+    END_SINGLE_CONNECTION
 }
 
 void test_tcp_connect_ok3(CuTest* tc)
 {
-    evrythng_handle_t h1;
+    START_SINGLE_CONNECTION
     evrythng_handle_t h2;
     evrythng_handle_t h3;
-    common_tcp_init_handle(&h1);
     common_tcp_init_handle(&h2);
     common_tcp_init_handle(&h3);
-    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, evrythng_connect(h1));
     CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, evrythng_connect(h2));
     CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, evrythng_connect(h3));
-    evrythng_disconnect(h1);
     evrythng_disconnect(h2);
     evrythng_disconnect(h3);
-    evrythng_destroy_handle(h1);
     evrythng_destroy_handle(h2);
     evrythng_destroy_handle(h3);
+    END_SINGLE_CONNECTION
 }
 
 static void test_pub_callback()
@@ -274,54 +314,6 @@ int sem_timed_wait(sem_t* sem)
     return -1;
 }
 #endif
-
-#define START_PUBSUB \
-    PRINT_START_MEM_STATS \
-    evrythng_handle_t h1;\
-    evrythng_handle_t h2;\
-    common_tcp_init_handle(&h1);\
-    common_tcp_init_handle(&h2);\
-    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, evrythng_connect(h1));\
-    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, evrythng_connect(h2));
-
-#define END_PUBSUB \
-    CuAssertIntEquals(tc, 0, sem_timed_wait(&pub_sem));\
-    CuAssertIntEquals(tc, 0, sem_timed_wait(&sub_sem));\
-    evrythng_disconnect(h1);\
-    evrythng_disconnect(h2);\
-    evrythng_destroy_handle(h1);\
-    evrythng_destroy_handle(h2);\
-    PRINT_END_MEM_STATS
-
-
-#define START_SINGLE_CONNECTION \
-    PRINT_START_MEM_STATS \
-    evrythng_handle_t h1;\
-    common_tcp_init_handle(&h1);\
-    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, evrythng_connect(h1));
-
-#define END_SINGLE_CONNECTION \
-    evrythng_disconnect(h1);\
-    evrythng_destroy_handle(h1);\
-    PRINT_END_MEM_STATS
-
-
-#if defined(CONFIG_OS_FREERTOS) && !defined(FREERTOS_SIMULATOR)
-#define PRINT_START_MEM_STATS \
-    const heapAllocatorInfo_t* s1 = getheapAllocInfo();\
-    wmprintf(">>>>>> %d/%d\n\r", s1->freeSize, s1->heapSize);
-#else
-#define PRINT_START_MEM_STATS
-#endif
-
-#if defined(CONFIG_OS_FREERTOS) && !defined(FREERTOS_SIMULATOR)
-#define PRINT_END_MEM_STATS \
-    const heapAllocatorInfo_t* s2 = getheapAllocInfo();\
-    wmprintf("<<<<<< %d/%d\n\r", s2->freeSize, s2->heapSize);
-#else
-#define PRINT_END_MEM_STATS 
-#endif
-
 
 void test_subunsub_thng(CuTest* tc)
 {

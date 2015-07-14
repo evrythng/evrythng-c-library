@@ -24,7 +24,6 @@
 #include <semphr.h>
 #define sleep(sec)  vTaskDelay((sec*1000)/portTICK_RATE_MS);
 #define realloc pvPortReAlloc
-#include <wmstdio.h>
 #define printf wmprintf
 #endif
 

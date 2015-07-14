@@ -219,20 +219,26 @@ exit:
  */
 void SocketBuffer_interrupted(int socket, int actual_len)
 {
-	socket_queue* queue = NULL;
+    socket_queue* queue = NULL;
 
-	FUNC_ENTRY;
-	if (ListFindItem(queues, &socket, socketcompare))
-		queue = (socket_queue*)(queues->current->content);
-	else /* new saved queue */
-	{
-		queue = def_queue;
-		ListAppend(queues, def_queue, sizeof(socket_queue)+def_queue->buflen);
-		SocketBuffer_newDefQ();
-	}
-	queue->index = 0;
-	queue->datalen = actual_len;
-	FUNC_EXIT;
+    FUNC_ENTRY;
+    if (ListFindItem(queues, &socket, socketcompare))
+        queue = (socket_queue*)(queues->current->content);
+    else /* new saved queue */
+    {
+        if (def_queue->socket != 0)
+        {
+            queue = def_queue;
+            ListAppend(queues, def_queue, sizeof(socket_queue)+def_queue->buflen);
+            SocketBuffer_newDefQ();
+        }
+    }
+    if (queue != NULL)
+    {
+        queue->index = 0;
+        queue->datalen = actual_len;
+    }
+    FUNC_EXIT;
 }
 
 

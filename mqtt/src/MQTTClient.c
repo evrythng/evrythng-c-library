@@ -79,6 +79,8 @@ static ClientStates ClientState =
 };
 
 ClientStates* bstate = &ClientState;
+static int initialized = 0;
+static int tls_initialized = 0;
 
 MQTTProtocol state;
 
@@ -91,11 +93,14 @@ extern mutex_type log_mutex;
 
 void MQTTClient_init()
 {
-	heap_mutex = xSemaphoreCreateRecursiveMutex();
-	mqttclient_mutex = xSemaphoreCreateRecursiveMutex();
+    if (!initialized)
+    {
+        heap_mutex = xSemaphoreCreateRecursiveMutex();
+        mqttclient_mutex = xSemaphoreCreateRecursiveMutex();
 #if defined(EVRYTHNG_DEBUG)
-	log_mutex = xSemaphoreCreateRecursiveMutex();
+        log_mutex = xSemaphoreCreateRecursiveMutex();
 #endif
+    }
 }
 #define WINAPI
 #elif defined(WIN32) || defined(WIN64)
@@ -145,7 +150,6 @@ void MQTTClient_init()
 #define WINAPI
 #endif
 
-static volatile int initialized = 0;
 static List* handles = NULL;
 static time_t last;
 static int running = 0;
@@ -289,9 +293,9 @@ int MQTTClient_create(MQTTClient* handle, const char* serverURI, const char* cli
 
 	if (!initialized)
 	{
-		#if defined(HEAP_H)
-			Heap_initialize();
-		#endif
+#if defined(HEAP_H)
+        Heap_initialize();
+#endif
 		Log_initialize((Log_nameValue*)MQTTClient_getVersionInfo());
 		bstate->clients = ListInitialize();
 		Socket_outInitialize();
@@ -301,7 +305,11 @@ int MQTTClient_create(MQTTClient* handle, const char* serverURI, const char* cli
 		SSLSocket_initialize();
 #endif
 #if defined(TLSSOCKET)
-	TLSSocket_initialize();
+        if (!tls_initialized)
+        {
+            TLSSocket_initialize();
+            tls_initialized = 1;
+        }
 #endif
 		initialized = 1;
 	}
@@ -341,7 +349,7 @@ int MQTTClient_create(MQTTClient* handle, const char* serverURI, const char* cli
 			MQTTPersistence_restoreMessageQueue(m->c);
 	}
 #endif
-	ListAppend(bstate->clients, m->c, sizeof(Clients) + 3*sizeof(List));
+	ListAppend(bstate->clients, m->c, sizeof(Clients));
 
 exit:
 	Thread_unlock_mutex(mqttclient_mutex);
@@ -366,10 +374,20 @@ void MQTTClient_terminate(void)
 #if defined(OPENSSL)
 		SSLSocket_terminate();
 #endif
-		#if defined(HEAP_H)
-			Heap_terminate();
-		#endif
+
+#if defined(HEAP_H)
+        Heap_terminate();
+#endif
+
 		Log_terminate();
+
+#if defined(CONFIG_OS_FREERTOS)
+        vSemaphoreDelete(heap_mutex);
+        vSemaphoreDelete(mqttclient_mutex);
+#if defined(EVRYTHNG_DEBUG)
+        vSemaphoreDelete(log_mutex)
+#endif
+#endif
 		initialized = 0;
 	}
 	FUNC_EXIT;
@@ -423,14 +441,14 @@ void MQTTClient_destroy(MQTTClient* handle)
 			Log(TRACE_MIN, 1, NULL, saved_clientid, saved_socket);
 		free(saved_clientid);
 	}
-	if (m->serverURI)
-		free(m->serverURI);
+    if (m->serverURI)
+        free(m->serverURI);
 	Thread_destroy_sem(m->connect_sem);
 	Thread_destroy_sem(m->connack_sem);
 	Thread_destroy_sem(m->suback_sem);
 	Thread_destroy_sem(m->unsuback_sem);
-	if (!ListRemove(handles, m))
-		Log(LOG_ERROR, -1, "free error");
+    if (!ListRemove(handles, m))
+        Log(LOG_ERROR, -1, "free error");
 	*handle = NULL;
 	if (bstate->clients->count == 0)
 		MQTTClient_terminate();

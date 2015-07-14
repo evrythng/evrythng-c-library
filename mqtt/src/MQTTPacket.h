@@ -40,7 +40,7 @@ include "Clients"
 BE*/
 
 #if !defined (OPENSSL) && !defined (TLSSOCKET)
-//typedef unsigned int bool;
+typedef unsigned int bool;
 #endif
 typedef void* (*pf)(unsigned char, char*, size_t);
 

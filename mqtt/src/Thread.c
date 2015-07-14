@@ -227,7 +227,6 @@ sem_type Thread_create_sem()
 
 	FUNC_ENTRY;
 	#if defined(CONFIG_OS_FREERTOS)
-		sem = malloc(sizeof(xSemaphoreHandle));
 		sem = xSemaphoreCreateCounting(1, 0);
 	#elif defined(WIN32) || defined(WIN64)
 		sem = CreateEvent(
