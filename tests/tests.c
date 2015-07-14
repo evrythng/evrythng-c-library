@@ -8,8 +8,8 @@
 #include "evrythng_tls_certificate.h"
 #endif
 
-#define MQTT_URL "tcp://mqtt.evrythng.com:1883"
-//#define MQTT_URL "ssl://mqtt.evrythng.com:443"
+//#define MQTT_URL "tcp://mqtt.evrythng.com:1883"
+#define MQTT_URL "ssl://mqtt.evrythng.com:443"
 //#define MQTT_URL "tcp://iot.eclipse.org:1883"
 //#define MQTT_URL "tcp://localhost:1883"
 //#define MQTT_URL "ssl://localhost:8883"
@@ -463,7 +463,7 @@ CuSuite* CuGetSuite(void)
 
 	SUITE_ADD_TEST(suite, test_tcp_connect_ok1);
 	SUITE_ADD_TEST(suite, test_tcp_connect_ok2);
-	SUITE_ADD_TEST(suite, test_tcp_connect_ok3);
+	//SUITE_ADD_TEST(suite, test_tcp_connect_ok3);
 
 	SUITE_ADD_TEST(suite, test_subunsub_thng);
 	SUITE_ADD_TEST(suite, test_subunsub_prod);
