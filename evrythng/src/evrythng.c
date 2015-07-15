@@ -444,7 +444,7 @@ evrythng_return_t evrythng_connect_internal(evrythng_handle_t handle)
     if (MQTTClient_isConnected(handle->mqtt_client)) 
         return EVRYTHNG_SUCCESS;
 
-    debug("MQTT connecting");
+    debug("MQTT connecting to %s", handle->url);
     if ((rc = MQTTClient_connect(handle->mqtt_client, &handle->mqtt_conn_opts)) != MQTTCLIENT_SUCCESS)
     {
         error("Failed to connect, return code %d", rc);

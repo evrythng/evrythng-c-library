@@ -80,25 +80,25 @@ static ClientStates ClientState =
 
 ClientStates* bstate = &ClientState;
 static int initialized = 0;
-static int tls_initialized = 0;
+static int glob_initialized = 0;
 
 MQTTProtocol state;
 
 #if defined(CONFIG_OS_FREERTOS)
 mutex_type mqttclient_mutex;
-extern mutex_type heap_mutex;
+mutex_type heap_mutex;
 #if defined(EVRYTHNG_DEBUG)
-extern mutex_type log_mutex;
+mutex_type log_mutex;
 #endif
 
 void MQTTClient_init()
 {
-    if (!initialized)
+    if (!glob_initialized)
     {
-        heap_mutex = xSemaphoreCreateRecursiveMutex();
-        mqttclient_mutex = xSemaphoreCreateRecursiveMutex();
+        mqttclient_mutex = Thread_create_mutex();
+        heap_mutex = Thread_create_mutex();
 #if defined(EVRYTHNG_DEBUG)
-        log_mutex = xSemaphoreCreateRecursiveMutex();
+        log_mutex = Thread_create_mutex();
 #endif
     }
 }
@@ -305,10 +305,10 @@ int MQTTClient_create(MQTTClient* handle, const char* serverURI, const char* cli
 		SSLSocket_initialize();
 #endif
 #if defined(TLSSOCKET)
-        if (!tls_initialized)
+        if (!glob_initialized)
         {
             TLSSocket_initialize();
-            tls_initialized = 1;
+            glob_initialized = 1;
         }
 #endif
 		initialized = 1;
@@ -378,16 +378,8 @@ void MQTTClient_terminate(void)
 #if defined(HEAP_H)
         Heap_terminate();
 #endif
-
 		Log_terminate();
-
-#if defined(CONFIG_OS_FREERTOS)
-        vSemaphoreDelete(heap_mutex);
-        vSemaphoreDelete(mqttclient_mutex);
-#if defined(EVRYTHNG_DEBUG)
-        vSemaphoreDelete(log_mutex)
-#endif
-#endif
+        
 		initialized = 0;
 	}
 	FUNC_EXIT;
@@ -1343,46 +1335,6 @@ exit:
 #endif
 
 	}
-
-	if (m->c->will)
-	{
-		free(m->c->will->msg);
-		free(m->c->will->topic);
-		free(m->c->will);
-		m->c->will = NULL;
-	}
-
-#if defined(OPENSSL)
-	if (m->c->sslopts)
-	{
-		if (m->c->sslopts->trustStore)
-			free((void*)m->c->sslopts->trustStore);
-		if (m->c->sslopts->keyStore)
-			free((void*)m->c->sslopts->keyStore);
-		if (m->c->sslopts->privateKey)
-			free((void*)m->c->sslopts->privateKey);
-		if (m->c->sslopts->privateKeyPassword)
-			free((void*)m->c->sslopts->privateKeyPassword);
-		if (m->c->sslopts->enabledCipherSuites)
-			free((void*)m->c->sslopts->enabledCipherSuites);
-		free(m->c->sslopts);
-		m->c->sslopts = NULL;
-	}
-#endif
-
-#if defined(TLSSOCKET)
-	if (m->c->cfg)
-	{
-		if (m->c->cfg->tls.client.ca_cert)
-			free((void*)m->c->cfg->tls.client.ca_cert);
-		if (m->c->cfg->tls.client.client_cert)
-			free((void*)m->c->cfg->tls.client.client_cert);
-		if (m->c->cfg->tls.client.client_key)
-			free((void*)m->c->cfg->tls.client.client_key);
-		free(m->c->cfg);
-		m->c->cfg = NULL;
-	}
-#endif
 
 	Thread_unlock_mutex(mqttclient_mutex);
 	FUNC_EXIT_RC(rc);

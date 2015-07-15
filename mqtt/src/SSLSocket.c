@@ -465,7 +465,14 @@ exit:
 void SSLSocket_terminate()
 {
 	FUNC_ENTRY;
+    int i;
+
+    for (i = 0; i < CRYPTO_num_locks(); i++)
+    {
+        SSL_destroy_mutex(&sslLocks[i]);
+    }
 	free(sslLocks);
+
 	FUNC_EXIT;
 }
 
