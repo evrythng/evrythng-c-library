@@ -267,7 +267,7 @@ int Socket_getReadySocket(int more_work, struct timeval *tp)
 		int rc1;
 #if defined(FREERTOS_SIMULATOR)
         sigset_t sigmask;
-        sigfillset(&sigmask);
+        sigaddset(&sigmask, SIGALRM);
 #endif
 		fd_set pwset;
 
