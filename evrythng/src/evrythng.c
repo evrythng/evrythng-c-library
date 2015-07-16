@@ -85,7 +85,7 @@ evrythng_return_t evrythng_init_handle(evrythng_handle_t* handle)
     (*handle)->mqtt_conn_opts.cleansession = 1;
     (*handle)->mqtt_conn_opts.struct_version = 1;
     (*handle)->mqtt_conn_opts.username = USERNAME;
-    (*handle)->mqtt_conn_opts.connectTimeout = 60;
+    (*handle)->mqtt_conn_opts.connectTimeout = 10;
     (*handle)->qos = 1;
     (*handle)->log_callback = 0;
     (*handle)->conlost_callback = 0;
