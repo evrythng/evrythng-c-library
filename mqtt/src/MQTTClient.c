@@ -382,6 +382,7 @@ void MQTTClient_terminate(void)
         
 		initialized = 0;
 	}
+
 	FUNC_EXIT;
 }
 
@@ -418,6 +419,46 @@ void MQTTClient_destroy(MQTTClient* handle)
 
 	if (m->c)
 	{
+        if (m->c->will)
+        {
+            free(m->c->will->msg);
+            free(m->c->will->topic);
+            free(m->c->will);
+            m->c->will = NULL;
+        }
+
+#if defined(OPENSSL)
+        if (m->c->sslopts)
+        {
+            if (m->c->sslopts->trustStore)
+                free((void*)m->c->sslopts->trustStore);
+            if (m->c->sslopts->keyStore)
+                free((void*)m->c->sslopts->keyStore);
+            if (m->c->sslopts->privateKey)
+                free((void*)m->c->sslopts->privateKey);
+            if (m->c->sslopts->privateKeyPassword)
+                free((void*)m->c->sslopts->privateKeyPassword);
+            if (m->c->sslopts->enabledCipherSuites)
+                free((void*)m->c->sslopts->enabledCipherSuites);
+            free(m->c->sslopts);
+            m->c->sslopts = NULL;
+        }
+#endif
+
+#if defined(TLSSOCKET)
+        if (m->c->cfg)
+        {
+            if (m->c->cfg->tls.client.ca_cert)
+                free((void*)m->c->cfg->tls.client.ca_cert);
+            if (m->c->cfg->tls.client.client_cert)
+                free((void*)m->c->cfg->tls.client.client_cert);
+            if (m->c->cfg->tls.client.client_key)
+                free((void*)m->c->cfg->tls.client.client_key);
+            free(m->c->cfg);
+            m->c->cfg = NULL;
+        }
+#endif
+
 #if !defined(CONFIG_OS_FREERTOS) || defined(EVRYTHNG_DEBUG)
 		int saved_socket = m->c->net.socket;
 #endif
