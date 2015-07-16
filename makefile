@@ -34,9 +34,9 @@ ifeq ($(BUILD_DIR),)
 	endif
 endif
 
-.PHONY: build_dir all cleanall makefile docs
+.PHONY: build_dir all cleanall makefile docs gen_config
 
-all: build_dir
+all: build_dir gen_config
 	$(MAKE) -C $(BUILD_DIR) -f Makefile all
 
 ifeq ($(BUILD_DIR),.)
@@ -71,3 +71,6 @@ docs:
 
 runtests: all
 	-$(BUILD_DIR)/tests/test
+
+gen_config:
+	cd tests && ./gen_header.sh

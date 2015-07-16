@@ -8,18 +8,8 @@
 #include "evrythng_tls_certificate.h"
 #endif
 
-//#define MQTT_URL "tcp://mqtt.evrythng.com:1883"
-#define MQTT_URL "ssl://mqtt.evrythng.com:443"
-//#define MQTT_URL "tcp://iot.eclipse.org:1883"
-//#define MQTT_URL "tcp://localhost:1883"
-//#define MQTT_URL "ssl://localhost:8883"
-#define API_KEY     "HiX0xYZwULxR0GBWb9ZuQi8vTcPSndRxfnx9iIvw4u12Bdt6iMxkjwXujCkadQfBfTiV7kGLx80JPdGj"
-#define THNG_1      "UfFcGftssBpwrSQ8bmT7Ammr"
-#define PRODUCT_1   "UfkcGeahPepabCk5dNdBBnQr"
-#define PROPERTY_1  "property_1"
-#define PROPERTY_2  "property_2"
-#define ACTION_1    "_action_1"
-#define ACTION_2    "_action_2"
+#include "evrythng_config.h"
+
 
 #define PROPERTY_VALUE_JSON "[{\"value\": 500}]"
 #define PROPERTIES_VALUE_JSON "[{\"key\": \"property_1\", \"value\": 500}, {\"key\": \"property_2\", \"value\": 100}]"
@@ -228,7 +218,7 @@ static void common_tcp_init_handle(evrythng_handle_t* h)
     evrythng_init_handle(h);
     evrythng_set_url(*h, MQTT_URL);
     evrythng_set_log_callback(*h, log_callback);
-    evrythng_set_key(*h, API_KEY);
+    evrythng_set_key(*h, DEVICE_API_KEY);
 #if defined(NO_FILESYSTEM)
     evrythng_set_certificate(*h, cert_buffer, sizeof(cert_buffer) - 1);
 #else
