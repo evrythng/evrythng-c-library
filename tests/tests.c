@@ -222,7 +222,7 @@ static void common_tcp_init_handle(evrythng_handle_t* h)
 #if defined(NO_FILESYSTEM)
     evrythng_set_certificate(*h, cert_buffer, sizeof(cert_buffer) - 1);
 #else
-    evrythng_set_certificate(*h, "demo/client.pem", strlen("demo/client.pem")+1);
+    evrythng_set_certificate(*h, "client.pem", strlen("client.pem")+1);
 #endif
 }
 

@@ -2,11 +2,19 @@
 
 set -i
 
-TCP_URL='tcp://mqtt.evrythng.com:1883'
-SSL_URL='ssl://mqtt.evrythng.com:443'
-THNG_ID='UfFcGftssBpwrSQ8bmT7Ammr'
-API_KEY='HiX0xYZwULxR0GBWb9ZuQi8vTcPSndRxfnx9iIvw4u12Bdt6iMxkjwXujCkadQfBfTiV7kGLx80JPdGj'
-PROP_NAME='property_1'
-CA_PATH='demo/client.pem'
+exit_script ()
+{
+    echo "please provide 'pub' or 'sub' parameter only"
+    exit
+}
 
-build_debug/demo/evrythng-cli --pub -u ${SSL_URL} -t ${THNG_ID} -k ${API_KEY} -n ${PROP_NAME} -c ${CA_PATH}
+if [[ $# -ne 1 || ( "$1" != "pub"  &&  "$1" != "sub") ]] 
+then
+    exit_script
+fi
+
+source Config
+
+CA_PATH='client.pem'
+
+build_debug/demo/evrythng-cli --$1 -u ${MQTT_URL} -t ${THNG_1} -k ${DEVICE_API_KEY} -n ${PROPERTY_1} -c ${CA_PATH}

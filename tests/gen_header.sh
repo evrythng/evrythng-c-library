@@ -1,7 +1,7 @@
 #!/bin/bash
 
-CONFIG_FILE=./Config
-HEADER_FILE=./evrythng_config.h
+CONFIG_FILE=Config
+HEADER_FILE=tests/evrythng_config.h
 
 
 if [ ! -f ${CONFIG_FILE} ]

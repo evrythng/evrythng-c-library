@@ -73,4 +73,4 @@ runtests: all
 	-$(BUILD_DIR)/tests/test
 
 gen_config:
-	cd tests && ./gen_header.sh
+	tests/gen_header.sh

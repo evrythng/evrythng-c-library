@@ -3,12 +3,13 @@ A core C library for the EVRYTHNG API
 
 ## Requirements
 
-In order to compile library and run tests you should have the following software installed:
+In order to compile library and run tests you should:
+
+1. have the following software installed:
 
 * Standart GCC toolchain
 * make
 * CMake
-* Mosquitto MQTT broker running on a local machine with default settings.
 * libssl-dev
 
 The library was build and tested using the following versions of software:
@@ -17,8 +18,11 @@ The library was build and tested using the following versions of software:
 * gcc (Ubuntu 4.8.2-19ubuntu1) 4.8.2
 * GNU Make 3.81
 * cmake version 2.8.12.2
-* mosquitto version 1.4.2
 * libssl-dev version 1.0.1f-1ubuntu9
+
+2. Copy Config_example file to Config and edit it by
+filling in the correct values according to your Evrythng account content.
+You should create product, thing and generate a device application key.
 
 ## Building
 
@@ -68,9 +72,6 @@ To run tests type
 ```
 make runtests
 ```
-Note that local MQTT broker mosquitto should be installed and running.
-Optionally you can change the mqtt broker address tests connect to by modifying 
-MQTT_BROKER_TCP_URL definition in ./evrythng/tests/tests.c
 
 ## Demo Application
 
@@ -81,4 +82,4 @@ After sucessfull compilation you can launch demo application via ${build_dir}/de
 will print help. Add "-c ./docs/client.pem" option while establishing secure connection to ssl://mqtt.evrythng.com.
 Using "--pub" demo applicaton will send random values from [0,100] range to provided property every 2 seconds.
 
-Additionaly you can use a helpfull script ./demo/run.sh to run demo application.
+Additionaly you can use a helpfull script ./demo.sh to run demo application.
