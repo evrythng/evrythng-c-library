@@ -1,22 +1,16 @@
 
 set(SRC
     ${SRC}
-    ${PROJECT_SOURCE_DIR}/mqtt/src/Clients.c
-    ${PROJECT_SOURCE_DIR}/mqtt/src/Heap.c
-    ${PROJECT_SOURCE_DIR}/mqtt/src/LinkedList.c
-    ${PROJECT_SOURCE_DIR}/mqtt/src/Messages.c
-    ${PROJECT_SOURCE_DIR}/mqtt/src/Log.c
-    ${PROJECT_SOURCE_DIR}/mqtt/src/StackTrace.c
-    ${PROJECT_SOURCE_DIR}/mqtt/src/MQTTClient.c
-    ${PROJECT_SOURCE_DIR}/mqtt/src/MQTTPacket.c
-    ${PROJECT_SOURCE_DIR}/mqtt/src/MQTTPacketOut.c
-    ${PROJECT_SOURCE_DIR}/mqtt/src/MQTTProtocolClient.c
-    ${PROJECT_SOURCE_DIR}/mqtt/src/MQTTProtocolOut.c
-    ${PROJECT_SOURCE_DIR}/mqtt/src/SSLSocket.c
-    ${PROJECT_SOURCE_DIR}/mqtt/src/TLSSocket.c
-    ${PROJECT_SOURCE_DIR}/mqtt/src/Socket.c
-    ${PROJECT_SOURCE_DIR}/mqtt/src/SocketBuffer.c
-    ${PROJECT_SOURCE_DIR}/mqtt/src/Thread.c
-    ${PROJECT_SOURCE_DIR}/mqtt/src/Tree.c
-    ${PROJECT_SOURCE_DIR}/mqtt/src/utf-8.c
+    ${PROJECT_SOURCE_DIR}/embedded-mqtt/MQTTClient-C/src/MQTTClient.c
+    ${PROJECT_SOURCE_DIR}/embedded-mqtt/MQTTClient-C/src/linux/MQTTLinux.c
+    ${PROJECT_SOURCE_DIR}/embedded-mqtt/MQTTPacket/src/MQTTConnectClient.c
+    ${PROJECT_SOURCE_DIR}/embedded-mqtt/MQTTPacket/src/MQTTConnectServer.c
+    ${PROJECT_SOURCE_DIR}/embedded-mqtt/MQTTPacket/src/MQTTDeserializePublish.c
+    ${PROJECT_SOURCE_DIR}/embedded-mqtt/MQTTPacket/src/MQTTFormat.c
+    ${PROJECT_SOURCE_DIR}/embedded-mqtt/MQTTPacket/src/MQTTPacket.c
+    ${PROJECT_SOURCE_DIR}/embedded-mqtt/MQTTPacket/src/MQTTSerializePublish.c
+    ${PROJECT_SOURCE_DIR}/embedded-mqtt/MQTTPacket/src/MQTTSubscribeClient.c
+    ${PROJECT_SOURCE_DIR}/embedded-mqtt/MQTTPacket/src/MQTTSubscribeServer.c
+    ${PROJECT_SOURCE_DIR}/embedded-mqtt/MQTTPacket/src/MQTTUnsubscribeClient.c
+    ${PROJECT_SOURCE_DIR}/embedded-mqtt/MQTTPacket/src/MQTTUnsubscribeServer.c
 )

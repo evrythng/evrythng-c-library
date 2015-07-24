@@ -16,6 +16,7 @@
 #define ACTION_JSON "{\"type\": \"_action_1\"}"
 #define LOCATION_JSON  "[{\"position\": { \"type\": \"Point\", \"coordinates\": [-17.3, 36] }}]"
 
+#include <pthread.h>
 
 #if defined(FREERTOS_SIMULATOR)
 #include <unistd.h>
@@ -35,6 +36,29 @@ xSemaphoreHandle sub_sem;
 sem_t pub_sem;
 sem_t sub_sem;
 #endif
+
+
+void* evrythng_process(void* arg)
+{
+    evrythng_start((evrythng_handle_t)arg, 1000);
+    return 0;
+}
+
+
+pthread_t start_processing_thread(evrythng_handle_t handle)
+{
+    pthread_t thread_id;
+    pthread_create(&thread_id, 0, evrythng_process, handle);
+    return thread_id;
+}
+
+
+void stop_processing_thread(evrythng_handle_t handle, pthread_t thread_id)
+{
+    evrythng_stop(handle);
+    pthread_join(thread_id, 0);
+}
+
 
 void log_callback(evrythng_log_level_t level, const char* fmt, va_list vl)
 {
@@ -83,9 +107,12 @@ void log_callback(evrythng_log_level_t level, const char* fmt, va_list vl)
     PRINT_START_MEM_STATS \
     evrythng_handle_t h1;\
     common_tcp_init_handle(&h1);\
-    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, evrythng_connect(h1));
+    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, evrythng_connect(h1));\
+    pthread_t tid = start_processing_thread(h1);
 
 #define END_SINGLE_CONNECTION \
+    CuAssertIntEquals(tc, 0, sem_timed_wait(&sub_sem));\
+    stop_processing_thread(h1, tid);\
     evrythng_disconnect(h1);\
     evrythng_destroy_handle(h1);\
     PRINT_END_MEM_STATS
@@ -236,24 +263,14 @@ void test_tcp_connect_ok1(CuTest* tc)
 
 void test_tcp_connect_ok2(CuTest* tc)
 {
-    START_SINGLE_CONNECTION
-    END_SINGLE_CONNECTION
-}
+    PRINT_START_MEM_STATS 
+    evrythng_handle_t h1;
+    common_tcp_init_handle(&h1);
+    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, evrythng_connect(h1));
 
-void test_tcp_connect_ok3(CuTest* tc)
-{
-    START_SINGLE_CONNECTION
-    evrythng_handle_t h2;
-    evrythng_handle_t h3;
-    common_tcp_init_handle(&h2);
-    common_tcp_init_handle(&h3);
-    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, evrythng_connect(h2));
-    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, evrythng_connect(h3));
-    evrythng_disconnect(h2);
-    evrythng_disconnect(h3);
-    evrythng_destroy_handle(h2);
-    evrythng_destroy_handle(h3);
-    END_SINGLE_CONNECTION
+    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, evrythng_disconnect(h1));
+    evrythng_destroy_handle(h1);
+    PRINT_END_MEM_STATS
 }
 
 static void test_pub_callback()
@@ -309,7 +326,11 @@ int sem_timed_wait(sem_t* sem)
 
 void test_subunsub_thng(CuTest* tc)
 {
-    START_SINGLE_CONNECTION
+    PRINT_START_MEM_STATS 
+    evrythng_handle_t h1;
+    common_tcp_init_handle(&h1);
+    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, evrythng_connect(h1));
+
     CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, evrythng_subscribe_thng_action(h1, THNG_1, ACTION_1, test_sub_callback));
     CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, evrythng_subscribe_thng_action(h1, THNG_1, ACTION_2, test_sub_callback));
     CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, evrythng_unsubscribe_thng_action(h1, THNG_1, ACTION_2));
@@ -324,12 +345,19 @@ void test_subunsub_thng(CuTest* tc)
     CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, evrythng_unsubscribe_thng_actions(h1, THNG_1));
     CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, evrythng_subscribe_thng_location(h1, THNG_1, test_sub_callback));
     CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, evrythng_unsubscribe_thng_location(h1, THNG_1));
-    END_SINGLE_CONNECTION
+
+    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, evrythng_disconnect(h1));
+    evrythng_destroy_handle(h1);
+    PRINT_END_MEM_STATS
 }
 
 void test_subunsub_prod(CuTest* tc)
 {
-    START_SINGLE_CONNECTION
+    PRINT_START_MEM_STATS 
+    evrythng_handle_t h1;
+    common_tcp_init_handle(&h1);
+    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, evrythng_connect(h1));
+
     CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, evrythng_subscribe_product_property(h1, PRODUCT_1, PROPERTY_1, test_sub_callback));
     CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, evrythng_subscribe_product_property(h1, PRODUCT_1, PROPERTY_2, test_sub_callback));
     CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, evrythng_unsubscribe_product_property(h1, PRODUCT_1, PROPERTY_1));
@@ -344,7 +372,10 @@ void test_subunsub_prod(CuTest* tc)
     CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, evrythng_subscribe_action(h1, ACTION_1, test_sub_callback));
     CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, evrythng_subscribe_action(h1, ACTION_2, test_sub_callback));
     CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, evrythng_unsubscribe_action(h1, ACTION_2));
-    END_SINGLE_CONNECTION
+
+    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, evrythng_disconnect(h1));
+    evrythng_destroy_handle(h1);
+    PRINT_END_MEM_STATS
 }
 
 void test_pubsub_thng_prop(CuTest* tc)
@@ -439,6 +470,7 @@ CuSuite* CuGetSuite(void)
 {
 	CuSuite* suite = CuSuiteNew();
 
+#if 1
 	SUITE_ADD_TEST(suite, test_init_handle_ok);
 	SUITE_ADD_TEST(suite, test_init_handle_fail);
 	SUITE_ADD_TEST(suite, test_destroy_handle);
@@ -460,11 +492,13 @@ CuSuite* CuGetSuite(void)
 	SUITE_ADD_TEST(suite, test_subunsub_thng);
 	SUITE_ADD_TEST(suite, test_subunsub_prod);
 
+#endif
 	SUITE_ADD_TEST(suite, test_pubsub_thng_prop);
 	SUITE_ADD_TEST(suite, test_pubsuball_thng_prop);
 
 	SUITE_ADD_TEST(suite, test_pubsub_thng_action);
 	SUITE_ADD_TEST(suite, test_pubsuball_thng_actions);
+#if 1
 
 	SUITE_ADD_TEST(suite, test_pubsub_thng_location);
 	SUITE_ADD_TEST(suite, test_pubsub_prod_prop);
@@ -475,9 +509,11 @@ CuSuite* CuGetSuite(void)
 
 	SUITE_ADD_TEST(suite, test_pubsub_action);
 	SUITE_ADD_TEST(suite, test_pubsuball_actions);
+#endif
 
 	return suite;
 }
+
 
 void RunAllTests(void* v)
 {
