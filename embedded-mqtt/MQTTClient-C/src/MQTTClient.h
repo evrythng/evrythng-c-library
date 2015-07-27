@@ -34,44 +34,19 @@
 #endif
 
 #include "MQTTPacket.h"
-#include "MQTTLinux.h"
-
-#if defined(MQTTCLIENT_PLATFORM_HEADER)
-/* The following sequence of macros converts the MQTTCLIENT_PLATFORM_HEADER value
- * into a string constant suitable for use with include.
- */
-#define xstr(s) str(s)
-#define str(s) #s
-#include xstr(MQTTCLIENT_PLATFORM_HEADER)
-#endif
+#include "MQTTPlatform.h"
 
 #define MAX_PACKET_ID 65535 /* according to the MQTT specification - do not change! */
 
 #if !defined(MAX_MESSAGE_HANDLERS)
-#define MAX_MESSAGE_HANDLERS 5 /* redefinable - how many subscriptions do you want? */
+#define MAX_MESSAGE_HANDLERS 20 /* redefinable - how many subscriptions do you want? */
 #endif
 
-    enum QoS { QOS0, QOS1, QOS2 };
+enum QoS { QOS0, QOS1, QOS2 };
 
-    /* all failure return codes must be negative */
-    enum returnCode { BUFFER_OVERFLOW = -2, FAILURE = -1, SUCCESS = 0 };
+/* all failure return codes must be negative */
+enum returnCode { BUFFER_OVERFLOW = -2, FAILURE = -1, SUCCESS = 0 };
 
-    /* The Platform specific header must define the Network and Timer structures and functions
-     * which operate on them.
-     *
-    typedef struct Network
-    {
-        int (*mqttread)(Network*, unsigned char* read_buffer, int, int);
-        int (*mqttwrite)(Network*, unsigned char* send_buffer, int, int);
-    } Network;*/
-
-    /* The Timer structure must be defined in the platform specific header,
-     * and have the following functions to operate on it.  */
-    extern void TimerInit(Timer*);
-extern char TimerIsExpired(Timer*);
-extern void TimerCountdownMS(Timer*, unsigned int);
-extern void TimerCountdown(Timer*, unsigned int);
-extern int TimerLeftMS(Timer*);
 
 typedef struct MQTTMessage
 {
@@ -176,6 +151,8 @@ DLLExport int MQTTDisconnect(MQTTClient* client);
  *  @return success code
  */
 DLLExport int MQTTYield(MQTTClient* client, int time);
+
+DLLExport int MQTTisConnected(MQTTClient* client);
 
 
 char MQTTisTopicMatched(char* topicFilter, MQTTString* topicName);

@@ -6,6 +6,8 @@ set (MINOR_VERSION 0)
 
 set(COMMON_PREFIX CMakeTimestamps)
 
+add_definitions(-DPOSIX_PLATFORM)
+
 include_directories(${PROJECT_SOURCE_DIR}/evrythng/include)
 include_directories(${PROJECT_SOURCE_DIR}/embedded-mqtt/MQTTClient-C/src)
 include_directories(${PROJECT_SOURCE_DIR}/embedded-mqtt/MQTTClient-C/src/linux)

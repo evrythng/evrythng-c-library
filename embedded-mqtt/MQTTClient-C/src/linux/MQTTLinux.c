@@ -58,7 +58,7 @@ int TimerLeftMS(Timer* timer)
 }
 
 
-int linux_read(Network* n, unsigned char* buffer, int len, int timeout_ms)
+int NetworkRead(Network* n, unsigned char* buffer, int len, int timeout_ms)
 {
 	struct timeval interval = {timeout_ms / 1000, (timeout_ms % 1000) * 1000};
 	if (interval.tv_sec < 0 || (interval.tv_sec == 0 && interval.tv_usec <= 0))
@@ -88,7 +88,7 @@ int linux_read(Network* n, unsigned char* buffer, int len, int timeout_ms)
 }
 
 
-int linux_write(Network* n, unsigned char* buffer, int len, int timeout_ms)
+int NetworkWrite(Network* n, unsigned char* buffer, int len, int timeout_ms)
 {
 	struct timeval tv;
 
@@ -104,8 +104,6 @@ int linux_write(Network* n, unsigned char* buffer, int len, int timeout_ms)
 void NetworkInit(Network* n)
 {
 	n->my_socket = 0;
-	n->mqttread = linux_read;
-	n->mqttwrite = linux_write;
 }
 
 

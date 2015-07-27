@@ -33,7 +33,7 @@ static int sendPacket(MQTTClient* c, int length, Timer* timer)
     
     while (sent < length && !TimerIsExpired(timer))
     {
-        rc = c->ipstack->mqttwrite(c->ipstack, &c->buf[sent], length, TimerLeftMS(timer));
+        rc = NetworkWrite(c->ipstack, &c->buf[sent], length, TimerLeftMS(timer));
         if (rc < 0)  // there was an error writing the data
             break;
         sent += rc;
@@ -88,7 +88,7 @@ static int decodePacket(MQTTClient* c, int* value, int timeout)
             rc = MQTTPACKET_READ_ERROR; /* bad data */
             goto exit;
         }
-        rc = c->ipstack->mqttread(c->ipstack, &i, 1, timeout);
+        rc = NetworkRead(c->ipstack, &i, 1, timeout);
         if (rc != 1)
             goto exit;
         *value += (i & 127) * multiplier;
@@ -107,7 +107,7 @@ static int readPacket(MQTTClient* c, Timer* timer)
     int rem_len = 0;
 
     /* 1. read the header byte.  This has the packet type in it */
-    if (c->ipstack->mqttread(c->ipstack, c->readbuf, 1, TimerLeftMS(timer)) != 1)
+    if (NetworkRead(c->ipstack, c->readbuf, 1, TimerLeftMS(timer)) != 1)
         goto exit;
 
     len = 1;
@@ -116,7 +116,7 @@ static int readPacket(MQTTClient* c, Timer* timer)
     len += MQTTPacket_encode(c->readbuf + 1, rem_len); /* put the original remaining length back into the buffer */
 
     /* 3. read the rest of the buffer using a callback to supply the rest of the data */
-    if (rem_len > 0 && (c->ipstack->mqttread(c->ipstack, c->readbuf + len, rem_len, TimerLeftMS(timer)) != rem_len))
+    if (rem_len > 0 && (NetworkRead(c->ipstack, c->readbuf + len, rem_len, TimerLeftMS(timer)) != rem_len))
         goto exit;
 
     header.byte = c->readbuf[0];
@@ -393,6 +393,14 @@ exit:
 	MutexUnlock(&c->mutex);
 
     return rc;
+}
+
+
+int MQTTisConnected(MQTTClient* client)
+{
+    if (client)
+        return client->isconnected;
+    return 0;
 }
 
 
