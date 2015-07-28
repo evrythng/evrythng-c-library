@@ -40,7 +40,7 @@ sem_t sub_sem;
 
 void* evrythng_process(void* arg)
 {
-    evrythng_start((evrythng_handle_t)arg, 1000);
+    evrythng_start((evrythng_handle_t)arg);
     return 0;
 }
 
@@ -52,6 +52,10 @@ pthread_t start_processing_thread(evrythng_handle_t handle)
     return thread_id;
 }
 
+void conlost_callback(evrythng_handle_t handle)
+{
+    evrythng_stop(handle);
+}
 
 void stop_processing_thread(evrythng_handle_t handle, pthread_t thread_id)
 {
@@ -245,6 +249,7 @@ static void common_tcp_init_handle(evrythng_handle_t* h)
     evrythng_init_handle(h);
     evrythng_set_url(*h, MQTT_URL);
     evrythng_set_log_callback(*h, log_callback);
+    evrythng_set_conlost_callback(*h, conlost_callback);
     evrythng_set_key(*h, DEVICE_API_KEY);
 #if defined(NO_FILESYSTEM)
     evrythng_set_certificate(*h, cert_buffer, sizeof(cert_buffer) - 1);
@@ -492,13 +497,13 @@ CuSuite* CuGetSuite(void)
 	SUITE_ADD_TEST(suite, test_subunsub_thng);
 	SUITE_ADD_TEST(suite, test_subunsub_prod);
 
-#endif
 	SUITE_ADD_TEST(suite, test_pubsub_thng_prop);
+#endif
 	SUITE_ADD_TEST(suite, test_pubsuball_thng_prop);
+#if 1
 
 	SUITE_ADD_TEST(suite, test_pubsub_thng_action);
 	SUITE_ADD_TEST(suite, test_pubsuball_thng_actions);
-#if 1
 
 	SUITE_ADD_TEST(suite, test_pubsub_thng_location);
 	SUITE_ADD_TEST(suite, test_pubsub_prod_prop);

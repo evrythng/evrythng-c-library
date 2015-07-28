@@ -90,7 +90,7 @@ evrythng_return_t evrythng_init_handle(evrythng_handle_t* handle)
 	MQTTClientInit(
             &(*handle)->mqtt_client, 
             &(*handle)->mqtt_network, 
-            10000, 
+            5000, 
             (*handle)->serialize_buffer, sizeof((*handle)->serialize_buffer), 
             (*handle)->read_buffer, sizeof((*handle)->read_buffer));
 
@@ -358,12 +358,22 @@ void evrythng_stop(evrythng_handle_t handle)
 }
 
 
-void evrythng_start(evrythng_handle_t handle, int timeout_ms)
+void evrythng_start(evrythng_handle_t handle)
 {
     while (!handle->stop)
     {
-        MQTTYield(&handle->mqtt_client, 100);
+        int rc = MQTTYield(&handle->mqtt_client, 500);
+        if (rc == CONNECTION_LOST)
+        {
+            warning("mqtt server connection lost");
+            evrythng_disconnect(handle);
+            if (handle->conlost_callback)
+                (*handle->conlost_callback)(handle);
+        }
+        //TODO
+        usleep(100);
     }
+    debug("mqtt processing thread exit");
 }
 
 
@@ -629,6 +639,9 @@ static evrythng_return_t evrythng_subscribe(
     else 
     {
         debug("subscribtion failed, rc=%d", rc);
+
+        rm_sub_callback(handle, sub_topic);
+
         return EVRYTHNG_SUBSCRIPTION_ERROR;
     }
 

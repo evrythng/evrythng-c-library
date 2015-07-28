@@ -44,10 +44,6 @@
 
 enum QoS { QOS0, QOS1, QOS2 };
 
-/* all failure return codes must be negative */
-enum returnCode { BUFFER_OVERFLOW = -2, FAILURE = -1, SUCCESS = 0 };
-
-
 typedef struct MQTTMessage
 {
     enum QoS qos;
@@ -89,6 +85,7 @@ typedef struct MQTTClient
 
     Network* ipstack;
     Timer ping_timer;
+    Timer pingresp_timer;
 	Mutex mutex;
 #if defined(MQTT_TASK)
 	Thread thread;

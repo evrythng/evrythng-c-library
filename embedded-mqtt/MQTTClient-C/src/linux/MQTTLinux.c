@@ -73,7 +73,12 @@ int NetworkRead(Network* n, unsigned char* buffer, int len, int timeout_ms)
 	while (bytes < len)
 	{
 		int rc = recv(n->my_socket, &buffer[bytes], (size_t)(len - bytes), 0);
-		if (rc == -1)
+        if (rc == 0)
+        {
+            bytes = 0;
+            break;
+        }
+        else if (rc == -1)
 		{
 			if (errno != ENOTCONN && errno != ECONNRESET)
 			{

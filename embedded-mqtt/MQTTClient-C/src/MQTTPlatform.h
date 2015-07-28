@@ -9,6 +9,9 @@
     #include ".h"
 #endif
 
+/* all failure return codes must be negative */
+enum returnCode { CONNECTION_LOST = -3, BUFFER_OVERFLOW = -2, FAILURE = -1, SUCCESS = 0 };
+
 void TimerInit(Timer*);
 char TimerIsExpired(Timer*);
 void TimerCountdownMS(Timer*, unsigned int);

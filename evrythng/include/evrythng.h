@@ -208,7 +208,7 @@ evrythng_return_t evrythng_set_log_callback(evrythng_handle_t handle, evrythng_l
 evrythng_return_t evrythng_set_conlost_callback(evrythng_handle_t handle, connection_lost_callback callback);
 
 
-void evrythng_start(evrythng_handle_t handle, int timeout_ms);
+void evrythng_start(evrythng_handle_t handle);
 void evrythng_stop(evrythng_handle_t handle);
 
 /** @brief Connect to Evrythng cloud.

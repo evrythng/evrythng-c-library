@@ -57,8 +57,11 @@ void log_callback(evrythng_log_level_t level, const char* fmt, va_list vl)
 
 void conlost_callback(evrythng_handle_t h)
 {
-    log("connection lost, exiting...");
-    exit(1);
+    log("connection lost, trying to reconnect");
+    while (evrythng_connect(h) != EVRYTHNG_SUCCESS) {
+        log("Retrying");
+        sleep(2);
+    }
 }
 
 void print_usage() {
@@ -147,7 +150,7 @@ int main(int argc, char *argv[])
         log("Subscribing to property %s", opts.prop);
         evrythng_subscribe_thng_property(opts.evt_handle, opts.thng, opts.prop, print_property_callback);
 
-        evrythng_start(opts.evt_handle, 1000);
+        evrythng_start(opts.evt_handle);
     } 
     else 
     {
