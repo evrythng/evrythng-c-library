@@ -119,7 +119,6 @@ char* MQTTFormat_toClientString(char* strbuf, int strbuflen, unsigned char* buf,
 	int index = 0;
 	int rem_length = 0;
 	MQTTHeader header = {0};
-	int strindex = 0;
 
 	header.byte = buf[index++];
 	index += MQTTPacket_decodeBuf(&buf[index], &rem_length);
@@ -130,7 +129,7 @@ char* MQTTFormat_toClientString(char* strbuf, int strbuflen, unsigned char* buf,
 	{
 		unsigned char sessionPresent, connack_rc;
 		if (MQTTDeserialize_connack(&sessionPresent, &connack_rc, buf, buflen) == 1)
-			strindex = MQTTStringFormat_connack(strbuf, strbuflen, connack_rc, sessionPresent);
+			MQTTStringFormat_connack(strbuf, strbuflen, connack_rc, sessionPresent);
 	}
 	break;
 	case PUBLISH:
@@ -142,7 +141,7 @@ char* MQTTFormat_toClientString(char* strbuf, int strbuflen, unsigned char* buf,
 		MQTTString topicName = MQTTString_initializer;
 		if (MQTTDeserialize_publish(&dup, &qos, &retained, &packetid, &topicName,
 				&payload, &payloadlen, buf, buflen) == 1)
-			strindex = MQTTStringFormat_publish(strbuf, strbuflen, dup, qos, retained, packetid,
+			MQTTStringFormat_publish(strbuf, strbuflen, dup, qos, retained, packetid,
 					topicName, payload, payloadlen);
 	}
 	break;
@@ -154,7 +153,7 @@ char* MQTTFormat_toClientString(char* strbuf, int strbuflen, unsigned char* buf,
 		unsigned char packettype, dup;
 		unsigned short packetid;
 		if (MQTTDeserialize_ack(&packettype, &dup, &packetid, buf, buflen) == 1)
-			strindex = MQTTStringFormat_ack(strbuf, strbuflen, packettype, dup, packetid);
+			MQTTStringFormat_ack(strbuf, strbuflen, packettype, dup, packetid);
 	}
 	break;
 	case SUBACK:
@@ -163,20 +162,20 @@ char* MQTTFormat_toClientString(char* strbuf, int strbuflen, unsigned char* buf,
 		int maxcount = 1, count = 0;
 		int grantedQoSs[1];
 		if (MQTTDeserialize_suback(&packetid, maxcount, &count, grantedQoSs, buf, buflen) == 1)
-			strindex = MQTTStringFormat_suback(strbuf, strbuflen, packetid, count, grantedQoSs);
+			MQTTStringFormat_suback(strbuf, strbuflen, packetid, count, grantedQoSs);
 	}
 	break;
 	case UNSUBACK:
 	{
 		unsigned short packetid;
 		if (MQTTDeserialize_unsuback(&packetid, buf, buflen) == 1)
-			strindex = MQTTStringFormat_ack(strbuf, strbuflen, UNSUBACK, 0, packetid);
+			MQTTStringFormat_ack(strbuf, strbuflen, UNSUBACK, 0, packetid);
 	}
 	break;
 	case PINGREQ:
 	case PINGRESP:
 	case DISCONNECT:
-		strindex = snprintf(strbuf, strbuflen, "%s", MQTTPacket_names[header.bits.type]);
+		snprintf(strbuf, strbuflen, "%s", MQTTPacket_names[header.bits.type]);
 		break;
 	}
 	return strbuf;
@@ -188,7 +187,6 @@ char* MQTTFormat_toServerString(char* strbuf, int strbuflen, unsigned char* buf,
 	int index = 0;
 	int rem_length = 0;
 	MQTTHeader header = {0};
-	int strindex = 0;
 
 	header.byte = buf[index++];
 	index += MQTTPacket_decodeBuf(&buf[index], &rem_length);
@@ -200,7 +198,7 @@ char* MQTTFormat_toServerString(char* strbuf, int strbuflen, unsigned char* buf,
 		MQTTPacket_connectData data;
 		int rc;
 		if ((rc = MQTTDeserialize_connect(&data, buf, buflen)) == 1)
-			strindex = MQTTStringFormat_connect(strbuf, strbuflen, &data);
+			MQTTStringFormat_connect(strbuf, strbuflen, &data);
 	}
 	break;
 	case PUBLISH:
@@ -212,7 +210,7 @@ char* MQTTFormat_toServerString(char* strbuf, int strbuflen, unsigned char* buf,
 		MQTTString topicName = MQTTString_initializer;
 		if (MQTTDeserialize_publish(&dup, &qos, &retained, &packetid, &topicName,
 				&payload, &payloadlen, buf, buflen) == 1)
-			strindex = MQTTStringFormat_publish(strbuf, strbuflen, dup, qos, retained, packetid,
+			MQTTStringFormat_publish(strbuf, strbuflen, dup, qos, retained, packetid,
 					topicName, payload, payloadlen);
 	}
 	break;
@@ -224,7 +222,7 @@ char* MQTTFormat_toServerString(char* strbuf, int strbuflen, unsigned char* buf,
 		unsigned char packettype, dup;
 		unsigned short packetid;
 		if (MQTTDeserialize_ack(&packettype, &dup, &packetid, buf, buflen) == 1)
-			strindex = MQTTStringFormat_ack(strbuf, strbuflen, packettype, dup, packetid);
+			MQTTStringFormat_ack(strbuf, strbuflen, packettype, dup, packetid);
 	}
 	break;
 	case SUBSCRIBE:
@@ -236,7 +234,7 @@ char* MQTTFormat_toServerString(char* strbuf, int strbuflen, unsigned char* buf,
 		int requestedQoSs[1];
 		if (MQTTDeserialize_subscribe(&dup, &packetid, maxcount, &count,
 				topicFilters, requestedQoSs, buf, buflen) == 1)
-			strindex = MQTTStringFormat_subscribe(strbuf, strbuflen, dup, packetid, count, topicFilters, requestedQoSs);;
+			MQTTStringFormat_subscribe(strbuf, strbuflen, dup, packetid, count, topicFilters, requestedQoSs);;
 	}
 	break;
 	case UNSUBSCRIBE:
@@ -245,14 +243,14 @@ char* MQTTFormat_toServerString(char* strbuf, int strbuflen, unsigned char* buf,
 		unsigned short packetid;
 		int maxcount = 1, count = 0;
 		MQTTString topicFilters[1];
-		if (MQTTDeserialize_unsubscribe(&dup, &packetid, maxcount, &count, topicFilters, buf, buflen) == 1)
-			strindex =  MQTTStringFormat_unsubscribe(strbuf, strbuflen, dup, packetid, count, topicFilters);
+        if (MQTTDeserialize_unsubscribe(&dup, &packetid, maxcount, &count, topicFilters, buf, buflen) == 1)
+            MQTTStringFormat_unsubscribe(strbuf, strbuflen, dup, packetid, count, topicFilters);
 	}
 	break;
 	case PINGREQ:
 	case PINGRESP:
 	case DISCONNECT:
-		strindex = snprintf(strbuf, strbuflen, "%s", MQTTPacket_names[header.bits.type]);
+		snprintf(strbuf, strbuflen, "%s", MQTTPacket_names[header.bits.type]);
 		break;
 	}
 	strbuf[strbuflen] = '\0';

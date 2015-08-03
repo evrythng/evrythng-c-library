@@ -14,12 +14,20 @@
  *    Allan Stockdill-Mander - initial API and implementation and/or initial documentation
  *******************************************************************************/
 
-#include "MQTTLinux.h"
+#include "POSIX/types.h"
+#include <stdarg.h>
+#include "evrythng_platform.h"
 
 void TimerInit(Timer* timer)
 {
 	timer->end_time = (struct timeval){0, 0};
 }
+
+
+void TimerDeinit(Timer* t)
+{
+}
+
 
 char TimerIsExpired(Timer* timer)
 {
@@ -167,12 +175,36 @@ void NetworkDisconnect(Network* n)
 
 void MutexInit(Mutex* m)
 {
+    if (!m)
+    {
+        platform_printf("%s: invalid mutex %p\n", __func__, m);
+        return;
+    }
+
     pthread_mutex_init(&m->mtx, 0);
+}
+
+
+void MutexDeinit(Mutex* m)
+{
+    if (!m)
+    {
+        platform_printf("%s: invalid mutex %p\n", __func__, m);
+        return;
+    }
+
+    pthread_mutex_destroy(&m->mtx);
 }
 
 
 int MutexLock(Mutex* m)
 {
+    if (!m)
+    {
+        platform_printf("%s: invalid mutex %p\n", __func__, m);
+        return -1;
+    }
+
     pthread_mutex_lock(&m->mtx);
     return 0;
 }
@@ -180,6 +212,125 @@ int MutexLock(Mutex* m)
 
 int MutexUnlock(Mutex* m)
 {
+    if (!m)
+    {
+        platform_printf("%s: invalid mutex %p\n", __func__, m);
+        return -1;
+    }
+
     pthread_mutex_unlock(&m->mtx);
     return 0;
 }
+
+
+void SemaphoreInit(Semaphore* s)
+{
+    if (!s) 
+        return;
+    sem_init(&s->sem, 0, 0);
+}
+
+
+void SemaphoreDeinit(Semaphore* s)
+{
+    if (!s) 
+        return;
+    sem_destroy(&s->sem);
+}
+
+
+int SemaphorePost(Semaphore* s)
+{
+    if (!s) 
+        return -1;
+    return sem_post(&s->sem);
+}
+
+
+int SemaphoreWait(Semaphore* s, int timeout_ms)
+{
+    if (!s) 
+        return -1;
+    
+    struct timespec ts;
+    clock_gettime(CLOCK_REALTIME, &ts);
+    ts.tv_sec += (timeout_ms / 1000);
+    ts.tv_nsec += ((timeout_ms - (timeout_ms % 1000) * 1000) * 1000);
+
+    do 
+    {
+        int ret = sem_timedwait(&s->sem, &ts);
+        if (!ret) return 0;
+        else
+        { 
+            if (errno == EINTR) continue;
+            return -1;
+        }
+    } while(1);
+
+    return -1;
+}
+
+static void* func_wrapper(void* arg)
+{
+    Thread* t = (Thread*)arg;
+    (*t->func)(t->arg);
+    return 0;
+}
+
+int ThreadCreate(Thread* t, 
+        int priority, 
+        const char* name, 
+        void (*func)(void*), 
+        size_t stack_size, void* arg )
+{
+    if (!t) return -1;
+    t->func = func;
+    t->arg = arg;
+    return pthread_create(&t->tid, 0, func_wrapper, t);
+}
+
+
+int ThreadJoin(Thread* t, int timeout_ms)
+{
+    if (!t) return -1;
+    return pthread_join(t->tid, 0);
+}
+
+
+int ThreadDestroy(Thread* t)
+{
+    if (!t) return -1;
+    return 0;
+}
+
+
+void* platform_malloc(size_t bytes)
+{
+    return malloc(bytes);
+}
+
+
+void platform_free(void* memory)
+{
+    free(memory);
+}
+
+int platform_printf(const char* fmt, ...)
+{
+    va_list vl;
+    va_start(vl, fmt);
+
+    char msg[512];
+    unsigned n = vsnprintf(msg, sizeof msg, fmt, vl);
+    if (n >= sizeof msg)
+        msg[sizeof msg - 1] = '\0';
+
+    int rc = printf("%s", msg);
+
+    va_end(vl);
+
+    return rc;
+}
+
+

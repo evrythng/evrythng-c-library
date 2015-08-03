@@ -150,7 +150,7 @@ int main(int argc, char *argv[])
         log("Subscribing to property %s", opts.prop);
         evrythng_subscribe_thng_property(opts.evt_handle, opts.thng, opts.prop, print_property_callback);
 
-        evrythng_start(opts.evt_handle);
+        evrythng_message_loop(opts.evt_handle);
     } 
     else 
     {

@@ -22,6 +22,7 @@
 
 #include <stdlib.h>
 #include <stdarg.h>
+#include "evrythng_platform.h"
 
 
 typedef enum _evrythng_return_t 
@@ -208,9 +209,6 @@ evrythng_return_t evrythng_set_log_callback(evrythng_handle_t handle, evrythng_l
 evrythng_return_t evrythng_set_conlost_callback(evrythng_handle_t handle, connection_lost_callback callback);
 
 
-void evrythng_start(evrythng_handle_t handle);
-void evrythng_stop(evrythng_handle_t handle);
-
 /** @brief Connect to Evrythng cloud.
  *
  * Use this function to connect to the Evrythng cloud.
@@ -240,6 +238,13 @@ evrythng_return_t evrythng_connect(evrythng_handle_t handle);
  *            \b EVRYTHNG_SUCCESS      on success \n
  */
 evrythng_return_t evrythng_disconnect(evrythng_handle_t handle);
+
+
+//TODO
+void evrythng_message_loop(evrythng_handle_t handle);
+
+//TODO
+void evrythng_stop(evrythng_handle_t handle);
 
 
 /** @brief Publish a single property to a given thing.

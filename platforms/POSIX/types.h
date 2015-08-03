@@ -46,6 +46,7 @@
 #include <string.h>
 #include <signal.h>
 #include <pthread.h>
+#include <semaphore.h>
 
 typedef struct Timer
 {
@@ -61,5 +62,17 @@ typedef struct Mutex
 {
 	pthread_mutex_t mtx;
 } Mutex;
+
+typedef struct Semaphore
+{
+    sem_t sem;
+} Semaphore;
+
+typedef struct Thread
+{
+    pthread_t tid;
+    void* arg;
+    void (*func)(void*);
+} Thread;
 
 #endif

@@ -12,6 +12,7 @@ include_directories(${PROJECT_SOURCE_DIR}/evrythng/include)
 include_directories(${PROJECT_SOURCE_DIR}/embedded-mqtt/MQTTClient-C/src)
 include_directories(${PROJECT_SOURCE_DIR}/embedded-mqtt/MQTTClient-C/src/linux)
 include_directories(${PROJECT_SOURCE_DIR}/embedded-mqtt/MQTTPacket/src)
+include_directories(${PROJECT_SOURCE_DIR}/platforms)
 
 set(SRC ${PROJECT_SOURCE_DIR}/evrythng/src/evrythng.c)
 include(cmake/mqtt.cmake)

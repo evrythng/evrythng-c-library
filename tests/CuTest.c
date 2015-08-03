@@ -10,7 +10,7 @@
 
 char* CuStrAlloc(int size)
 {
-	char* newStr = (char*) malloc( sizeof(char) * (size) );
+	char* newStr = (char*) platform_malloc( sizeof(char) * (size) );
 	return newStr;
 }
 
@@ -30,16 +30,16 @@ void CuStringInit(CuString* str)
 {
 	str->length = 0;
 	str->size = STRING_MAX;
-	str->buffer = (char*) malloc(sizeof(char) * str->size);
+	str->buffer = (char*) platform_malloc(sizeof(char) * str->size);
 	str->buffer[0] = '\0';
 }
 
 CuString* CuStringNew(void)
 {
-	CuString* str = (CuString*) malloc(sizeof(CuString));
+	CuString* str = (CuString*) platform_malloc(sizeof(CuString));
 	str->length = 0;
 	str->size = STRING_MAX;
-	str->buffer = (char*) malloc(sizeof(char) * str->size);
+	str->buffer = (char*) platform_malloc(sizeof(char) * str->size);
 	str->buffer[0] = '\0';
 	return str;
 }
@@ -47,8 +47,8 @@ CuString* CuStringNew(void)
 void CuStringDelete(CuString *str)
 {
         if (!str) return;
-        free(str->buffer);
-        free(str);
+        platform_free(str->buffer);
+        platform_free(str);
 }
 
 void CuStringResize(CuString* str, int newSize)
@@ -126,8 +126,8 @@ CuTest* CuTestNew(const char* name, TestFunction function)
 void CuTestDelete(CuTest *t)
 {
         if (!t) return;
-        free(t->name);
-        free(t);
+        platform_free(t->name);
+        platform_free(t);
 }
 
 void CuTestRun(CuTest* tc)
@@ -258,8 +258,7 @@ void CuSuiteDelete(CuSuite *testSuite)
                         CuTestDelete(testSuite->list[n]);
                 }
         }
-        free(testSuite);
-
+        platform_free(testSuite);
 }
 
 void CuSuiteAdd(CuSuite* testSuite, CuTest *testCase)

@@ -1,5 +1,4 @@
 #include "evrythng.h"
-#include "platform.h"
 
 #include <string.h>
 #include "CuTest.h"
@@ -16,7 +15,6 @@
 #define ACTION_JSON "{\"type\": \"_action_1\"}"
 #define LOCATION_JSON  "[{\"position\": { \"type\": \"Point\", \"coordinates\": [-17.3, 36] }}]"
 
-#include <pthread.h>
 
 #if defined(FREERTOS_SIMULATOR)
 #include <unistd.h>
@@ -28,39 +26,36 @@ void vApplicationIdleHook(void)
 #endif
 
 
-#if defined(CONFIG_OS_FREERTOS) && !defined(FREERTOS_SIMULATOR)
-xSemaphoreHandle pub_sem;
-xSemaphoreHandle sub_sem;
-#else
-#include <semaphore.h>
-sem_t pub_sem;
-sem_t sub_sem;
-#endif
+Semaphore sub_sem;
+Semaphore pub_sem;
+Thread t;
 
 
-void* evrythng_process(void* arg)
+void evrythng_process(void* arg)
 {
-    evrythng_start((evrythng_handle_t)arg);
-    return 0;
+    platform_printf("%s STARTED\n", __func__);
+    evrythng_message_loop((evrythng_handle_t)arg);
+    platform_printf("%s STOPPED\n", __func__);
 }
 
 
-pthread_t start_processing_thread(evrythng_handle_t handle)
+void start_processing_thread(evrythng_handle_t handle)
 {
-    pthread_t thread_id;
-    pthread_create(&thread_id, 0, evrythng_process, handle);
-    return thread_id;
+    ThreadCreate(&t, 0, "mqtt_loop", evrythng_process, 8192, handle);
 }
+
 
 void conlost_callback(evrythng_handle_t handle)
 {
     evrythng_stop(handle);
 }
 
-void stop_processing_thread(evrythng_handle_t handle, pthread_t thread_id)
+
+void stop_processing_thread(evrythng_handle_t handle)
 {
     evrythng_stop(handle);
-    pthread_join(thread_id, 0);
+    ThreadJoin(&t, 20000);
+    ThreadDestroy(&t);
 }
 
 
@@ -75,17 +70,17 @@ void log_callback(evrythng_log_level_t level, const char* fmt, va_list vl)
     switch (level)
     {
         case EVRYTHNG_LOG_ERROR:
-            printf("ERROR: ");
+            platform_printf("ERROR: ");
             break;
         case EVRYTHNG_LOG_WARNING:
-            printf("WARNING: ");
+            platform_printf("WARNING: ");
             break;
         default:
         case EVRYTHNG_LOG_DEBUG:
-            printf("DEBUG: ");
+            platform_printf("DEBUG: ");
             break;
     }
-    printf("%s\n\r", msg);
+    platform_printf("%s\n\r", msg);
 }
 
 #define START_PUBSUB \
@@ -98,8 +93,8 @@ void log_callback(evrythng_log_level_t level, const char* fmt, va_list vl)
     CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, evrythng_connect(h2));
 
 #define END_PUBSUB \
-    CuAssertIntEquals(tc, 0, sem_timed_wait(&pub_sem));\
-    CuAssertIntEquals(tc, 0, sem_timed_wait(&sub_sem));\
+    CuAssertIntEquals(tc, 0, SemaphoreWait(&pub_sem, 10000));\
+    CuAssertIntEquals(tc, 0, SemaphoreWait(&sub_sem, 10000));\
     evrythng_disconnect(h1);\
     evrythng_disconnect(h2);\
     evrythng_destroy_handle(h1);\
@@ -112,11 +107,11 @@ void log_callback(evrythng_log_level_t level, const char* fmt, va_list vl)
     evrythng_handle_t h1;\
     common_tcp_init_handle(&h1);\
     CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, evrythng_connect(h1));\
-    pthread_t tid = start_processing_thread(h1);
+    start_processing_thread(h1);
 
 #define END_SINGLE_CONNECTION \
-    CuAssertIntEquals(tc, 0, sem_timed_wait(&sub_sem));\
-    stop_processing_thread(h1, tid);\
+    CuAssertIntEquals(tc, 0, SemaphoreWait(&sub_sem, 10000));\
+    stop_processing_thread(h1);\
     evrythng_disconnect(h1);\
     evrythng_destroy_handle(h1);\
     PRINT_END_MEM_STATS
@@ -280,54 +275,17 @@ void test_tcp_connect_ok2(CuTest* tc)
 
 static void test_pub_callback()
 {
-    printf("%s: message published\n\r", __func__);
-#if defined(CONFIG_OS_FREERTOS) && !defined(FREERTOS_SIMULATOR)
-    xSemaphoreGive(pub_sem);
-#else
-    sem_post(&pub_sem);
-#endif
+    platform_printf("%s: message published\n\r", __func__);
+    SemaphorePost(&pub_sem);
 }
 
 static void test_sub_callback(const char* str_json, size_t len)
 {
     char msg[len+1]; snprintf(msg, sizeof msg, "%s", str_json);
-    printf("%s: %s\n\r", __func__, msg);
-#if defined(CONFIG_OS_FREERTOS) && !defined(FREERTOS_SIMULATOR)
-    xSemaphoreGive(sub_sem);
-#else
-    sem_post(&sub_sem);
-#endif
+    platform_printf("%s: %s\n\r", __func__, msg);
+    SemaphorePost(&sub_sem);
 }
 
-#if defined(CONFIG_OS_FREERTOS) && !defined(FREERTOS_SIMULATOR)
-int sem_timed_wait(xSemaphoreHandle* sem)
-{
-    if (xSemaphoreTake(*sem, configTICK_RATE_HZ * 10) == pdTRUE)
-        return 0;
-    else
-        return -1;
-}
-#else
-int sem_timed_wait(sem_t* sem)
-{
-    struct timespec ts;
-    clock_gettime(CLOCK_REALTIME, &ts);
-    ts.tv_sec += 10;
-
-    do 
-    {
-        int ret = sem_timedwait(sem, &ts);
-        if (!ret) return 0;
-        else
-        { 
-            if (errno == EINTR) continue;
-            return -1;
-        }
-    } while(1);
-
-    return -1;
-}
-#endif
 
 void test_subunsub_thng(CuTest* tc)
 {
@@ -492,13 +450,12 @@ CuSuite* CuGetSuite(void)
 
 	SUITE_ADD_TEST(suite, test_tcp_connect_ok1);
 	SUITE_ADD_TEST(suite, test_tcp_connect_ok2);
-	//SUITE_ADD_TEST(suite, test_tcp_connect_ok3);
 
 	SUITE_ADD_TEST(suite, test_subunsub_thng);
 	SUITE_ADD_TEST(suite, test_subunsub_prod);
 
-	SUITE_ADD_TEST(suite, test_pubsub_thng_prop);
 #endif
+	SUITE_ADD_TEST(suite, test_pubsub_thng_prop);
 	SUITE_ADD_TEST(suite, test_pubsuball_thng_prop);
 #if 1
 
@@ -520,15 +477,10 @@ CuSuite* CuGetSuite(void)
 }
 
 
-void RunAllTests(void* v)
+void RunAllTests()
 {
-#if defined(CONFIG_OS_FREERTOS) && !defined(FREERTOS_SIMULATOR)
-    vSemaphoreCreateBinary(pub_sem);
-    vSemaphoreCreateBinary(sub_sem);
-#else
-    sem_init(&pub_sem, 0, 0);
-    sem_init(&sub_sem, 0, 0);
-#endif
+    SemaphoreInit(&sub_sem);
+    SemaphoreInit(&pub_sem);
 
 	CuString *output = CuStringNew();
     CuSuite* suite = CuGetSuite();
@@ -536,12 +488,11 @@ void RunAllTests(void* v)
 	CuSuiteRun(suite);
 	CuSuiteSummary(suite, output);
 	CuSuiteDetails(suite, output);
-    printf("%s\n\r", output->buffer);
+    platform_printf("%s\n\r", output->buffer);
     CuStringDelete(output);
     CuSuiteDelete(suite);
 
-#if defined(CONFIG_OS_FREERTOS)
-    vTaskEndScheduler();
-#endif
+    SemaphoreDeinit(&sub_sem);
+    SemaphoreDeinit(&pub_sem);
 }
 

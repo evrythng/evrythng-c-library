@@ -1,5 +1,5 @@
 #include "tests.h"
-#include "platform.h"
+#include "evrythng_platform.h"
 
 int main(void)
 {
