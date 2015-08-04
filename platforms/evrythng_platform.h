@@ -54,4 +54,6 @@ int platform_printf(const char* fmt, ...);
 void* platform_malloc(size_t bytes);
 void  platform_free(void* memory);
 
+void platform_sleep(int ms);
+
 #endif //__MQTT_PLATFORM_

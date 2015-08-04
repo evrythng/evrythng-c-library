@@ -45,13 +45,13 @@ void NetworkInit(Network* t)
 int NetworkConnect(Network* n, char* hostname, int port)
 {
     wiced_ip_address_t ip_address;
-    wiced_result_t rc;
+    wiced_result_t rc = -1;
 
     rc = wiced_hostname_lookup(hostname, &ip_address, 10000);
     if (rc != WICED_SUCCESS)
     {
         platform_printf("failed to resolve ip address of %s, rc = %d\n", hostname, rc);
-        return -1;
+        goto exit;
     }
 
     /* Create a TCP socket */
@@ -59,31 +59,37 @@ int NetworkConnect(Network* n, char* hostname, int port)
     if (rc != WICED_SUCCESS)
     {
         platform_printf("tcp socket creation failed, rc = %d\n", rc);
-        return -1;
+        goto exit;
     }
+
+    wiced_tcp_bind(&n->socket, WICED_ANY_PORT);
 
     rc = wiced_tcp_connect(&n->socket, &ip_address, port, 5000);
     if (rc != WICED_SUCCESS)
     {
         platform_printf("unable to establish connection to %s:%d, rc = %d\n", hostname, port, rc);
-        return -1;
+        goto exit;
     }
 
     rc = wiced_tcp_stream_init(&n->stream, &n->socket);
     if (rc != WICED_SUCCESS)
     {
         platform_printf("unable to init tcp stream, rc = %d\n", rc);
-        return -1;
+        goto exit;
     }
 
-    return 0;
+    rc = WICED_SUCCESS;
+exit:
+    if (rc != WICED_SUCCESS)
+        NetworkDisconnect(n);
+    return rc;
 }
 
 
 void NetworkDisconnect(Network* n)
 {
-    wiced_tcp_stream_deinit(&n->stream);
     wiced_tcp_disconnect(&n->socket);
+    wiced_tcp_stream_deinit(&n->stream);
     wiced_tcp_delete_socket(&n->socket);
 }
 
@@ -93,12 +99,15 @@ int NetworkRead(Network* n, unsigned char* buffer, int length, int timeout)
     wiced_result_t rc = wiced_tcp_stream_read(&n->stream, buffer, length, timeout);
     if (rc != WICED_SUCCESS)
     {
-        if (rc == WICED_CONNECTION_RESET || rc == WICED_CONNECTION_CLOSED)
-            return 0;
-        if (rc != WICED_TIMEOUT)
-            platform_printf("failed to read data from tcp stream, rc = %d\n", rc);
-        else
+        if (rc == WICED_TIMEOUT)
+        {
             return -1;
+        }
+        else
+        {
+            platform_printf("failed to read data from tcp stream, rc = %d\n", rc);
+            return 0;
+        }
     }
 
     //platform_printf("successfully read %d bytes from tcp stream\n", length);
@@ -328,3 +337,7 @@ void platform_free(void* memory)
     free(memory);
 }
 
+void platform_sleep(int ms)
+{
+    wiced_rtos_delay_milliseconds(ms);
+}

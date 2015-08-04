@@ -347,7 +347,10 @@ void evrythng_message_loop(evrythng_handle_t handle)
             if (handle->conlost_callback)
                 (*handle->conlost_callback)(handle);
         }
+        else if (rc < 0)
+            platform_sleep(100);
     }
+
     debug("mqtt processing thread exit");
 }
 
@@ -411,6 +414,7 @@ evrythng_return_t evrythng_connect_internal(evrythng_handle_t handle)
     if ((rc = MQTTConnect(&handle->mqtt_client, &handle->mqtt_conn_opts)) != MQTT_SUCCESS)
     {
         error("Failed to connect, return code %d", rc);
+        NetworkDisconnect(&handle->mqtt_network);
         return EVRYTHNG_CONNECTION_FAILED;
     }
     debug("MQTT connected");
@@ -470,8 +474,7 @@ evrythng_return_t evrythng_disconnect(evrythng_handle_t handle)
     rc = MQTTDisconnect(&handle->mqtt_client);
     if (rc != MQTT_SUCCESS)
     {
-        error("failed to disconnect: rc = %d", rc);
-        return EVRYTHNG_FAILURE;
+        error("failed to disconnect mqtt: rc = %d", rc);
     }
     NetworkDisconnect(&handle->mqtt_network);
     debug("MQTT disconnected");

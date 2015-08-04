@@ -222,6 +222,12 @@ int keepalive(MQTTClient* c)
             {
                 TimerCountdownMS(&c->pingresp_timer, c->command_timeout_ms);
                 c->ping_outstanding = 1;
+                platform_printf("%s: %d sent ping request\n", __func__, __LINE__);
+            }
+
+            if (len > 0 && rc != MQTT_SUCCESS)
+            {
+                platform_printf("%s: %d failed to send ping request, rc = %d\n", __func__, __LINE__, rc);
             }
         }
     }
@@ -239,8 +245,7 @@ int cycle(MQTTClient* c, Timer* timer)
     // read the socket, see what work is due
     short packet_type = readPacket(c, timer);
     
-    int len = 0,
-        rc = MQTT_SUCCESS;
+    int len = 0, rc = MQTT_SUCCESS;
 
     switch (packet_type)
     {
@@ -295,6 +300,7 @@ int cycle(MQTTClient* c, Timer* timer)
             break;
         case PINGRESP:
             c->ping_outstanding = 0;
+            platform_printf("%s: %d received ping response\n", __func__, __LINE__);
             break;
     }
 
