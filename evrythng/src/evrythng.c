@@ -5,6 +5,7 @@
 #include "MQTTClient.h"
 #include "evrythng.h"
 #include "evrythng_platform.h"
+#include "evrythng_tls_certificate.h"
 
 #define TOPIC_MAX_LEN 128
 #define USERNAME "authorization"
@@ -25,9 +26,9 @@ struct evrythng_ctx_t {
     int     port;
     char*   client_id;
     char*   key;
-    char*   ca_buf;
+    const char* ca_buf;
     size_t  ca_size;
-    int     enable_ssl;
+    int     secure_connection;
     int     qos;
     int     initialized;
     int     stop;
@@ -82,14 +83,8 @@ evrythng_return_t evrythng_init_handle(evrythng_handle_t* handle)
     (*handle)->log_callback = 0;
     (*handle)->conlost_callback = 0;
 
-    NetworkInit(&(*handle)->mqtt_network);
-
-	MQTTClientInit(
-            &(*handle)->mqtt_client, 
-            &(*handle)->mqtt_network, 
-            5000, 
-            (*handle)->serialize_buffer, sizeof((*handle)->serialize_buffer), 
-            (*handle)->read_buffer, sizeof((*handle)->read_buffer));
+    (*handle)->ca_buf = cert_buffer;
+    (*handle)->ca_size = sizeof cert_buffer;
 
     return EVRYTHNG_SUCCESS;
 }
@@ -101,7 +96,7 @@ void evrythng_destroy_handle(evrythng_handle_t handle)
     if (handle->initialized && MQTTisConnected(&handle->mqtt_client)) evrythng_disconnect(handle);
     if (handle->host) platform_free(handle->host);
     if (handle->key) platform_free(handle->key);
-    if (handle->ca_buf) platform_free(handle->ca_buf);
+    //if (handle->ca_buf) platform_free(handle->ca_buf);
     if (handle->client_id) platform_free(handle->client_id);
 
     sub_callback_t **_sub_callback = &handle->sub_callbacks;
@@ -143,12 +138,12 @@ evrythng_return_t evrythng_set_url(evrythng_handle_t handle, const char* url)
     if (strncmp("tcp", url, strlen("tcp")) == 0) 
     {
         debug("setting TCP connection %s", url);
-        handle->enable_ssl = 0;
+        handle->secure_connection = 0;
     }
     else if (strncmp("ssl", url, strlen("ssl")) == 0) 
     {
         debug("setting SSL connection %s", url);
-        handle->enable_ssl = 1;
+        handle->secure_connection = 1;
     }
     else return EVRYTHNG_BAD_URL;
 
@@ -193,12 +188,14 @@ evrythng_return_t evrythng_set_client_id(evrythng_handle_t handle, const char* c
 }
 
 
+#if 0
 evrythng_return_t evrythng_set_certificate(evrythng_handle_t handle, const char* cert, size_t size)
 {
     if (!handle || !cert || size <= 0)
         return EVRYTHNG_BAD_ARGS;
     int r = replace_str(&handle->ca_buf, cert, size);
     handle->ca_size = size;
+
 #if 0
     handle->mqtt_ssl_opts.trustStore = handle->ca_buf;
 #endif
@@ -208,6 +205,7 @@ evrythng_return_t evrythng_set_certificate(evrythng_handle_t handle, const char*
 #endif
     return r;
 }
+#endif
 
 
 evrythng_return_t evrythng_set_log_callback(evrythng_handle_t handle, evrythng_log_callback callback)
@@ -368,13 +366,18 @@ evrythng_return_t evrythng_connect(evrythng_handle_t handle)
     if (handle->initialized)
         return evrythng_connect_internal(handle);
 
-#if 0
-    if (handle->enable_ssl && !handle->mqtt_ssl_opts.trustStore) 
-    {
-        warning("a certificate is required to connect to %s", handle->url);
-        return EVRYTHNG_CERT_REQUIRED_ERROR;
-    }
-#endif
+    if (handle->secure_connection)
+        NetworkSecuredInit(&handle->mqtt_network, handle->ca_buf, sizeof handle->ca_buf);
+    else
+        NetworkInit(&handle->mqtt_network);
+
+	MQTTClientInit(
+            &handle->mqtt_client, 
+            &handle->mqtt_network, 
+            5000, 
+            handle->serialize_buffer, sizeof(handle->serialize_buffer), 
+            handle->read_buffer, sizeof(handle->read_buffer));
+
 
     if (!handle->client_id)
     {

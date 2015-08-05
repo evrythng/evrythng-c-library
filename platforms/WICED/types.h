@@ -11,6 +11,8 @@ typedef struct Timer
 
 typedef struct Network
 {
+    wiced_bool_t tls_enabled;
+    wiced_tls_simple_context_t tls_context;
 	wiced_tcp_socket_t socket;
     wiced_tcp_stream_t stream;
 } Network;

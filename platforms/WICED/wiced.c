@@ -37,8 +37,28 @@ int TimerLeftMS(Timer* t)
 }
 
 
-void NetworkInit(Network* t)
+void NetworkInit(Network* n)
 {
+    n->tls_enabled = WICED_FALSE;
+}
+
+
+void NetworkSecuredInit(Network* n, const char* ca_buf, size_t ca_size)
+{
+    if (!n || !ca_buf || !ca_size)
+    {
+        platform_printf("%s: bad args\n", __func__);
+        return;
+    }
+
+    wiced_result_t rc = wiced_tls_init_root_ca_certificates(ca_buf);
+    if (rc != WICED_SUCCESS)
+    {
+        platform_printf("%s: root CA certificate failed to initialize: %u\n", __func__, rc);
+        return;
+    }
+
+    n->tls_enabled = WICED_TRUE;
 }
 
 
@@ -54,6 +74,9 @@ int NetworkConnect(Network* n, char* hostname, int port)
         goto exit;
     }
 
+    if (n->tls_enabled)
+        wiced_tls_init_simple_context(&n->tls_context, hostname);
+
     /* Create a TCP socket */
     rc = wiced_tcp_create_socket(&n->socket, WICED_STA_INTERFACE);
     if (rc != WICED_SUCCESS)
@@ -61,6 +84,9 @@ int NetworkConnect(Network* n, char* hostname, int port)
         platform_printf("tcp socket creation failed, rc = %d\n", rc);
         goto exit;
     }
+
+    if (n->tls_enabled)
+        wiced_tcp_enable_tls(&n->socket, &n->tls_context);
 
     //wiced_tcp_bind(&n->socket, WICED_ANY_PORT);
 

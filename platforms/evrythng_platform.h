@@ -25,6 +25,7 @@ void TimerCountdownMS(Timer*, unsigned int);
 int  TimerLeftMS(Timer*);
 
 void NetworkInit(Network*);
+void NetworkSecuredInit(Network*, const char* ca_buf, size_t ca_size);
 int  NetworkConnect(Network*, char*, int);
 void NetworkDisconnect(Network*);
 int  NetworkRead(Network*, unsigned char*, int, int);
