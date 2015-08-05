@@ -62,7 +62,7 @@ int NetworkConnect(Network* n, char* hostname, int port)
         goto exit;
     }
 
-    wiced_tcp_bind(&n->socket, WICED_ANY_PORT);
+    //wiced_tcp_bind(&n->socket, WICED_ANY_PORT);
 
     rc = wiced_tcp_connect(&n->socket, &ip_address, port, 5000);
     if (rc != WICED_SUCCESS)

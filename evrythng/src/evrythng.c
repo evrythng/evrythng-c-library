@@ -339,19 +339,24 @@ void evrythng_message_loop(evrythng_handle_t handle)
 {
     while (!handle->stop)
     {
-        int rc = MQTTYield(&handle->mqtt_client, 500);
-        if (rc == MQTT_CONNECTION_LOST)
-        {
-            warning("mqtt server connection lost");
-            evrythng_disconnect(handle);
-            if (handle->conlost_callback)
-                (*handle->conlost_callback)(handle);
-        }
-        else if (rc < 0)
-            platform_sleep(100);
+        evrythng_message_cycle(handle, 500);
+        platform_sleep(100);
     }
 
     debug("mqtt processing thread exit");
+}
+
+
+void evrythng_message_cycle(evrythng_handle_t handle, int timeout_ms)
+{
+    int rc = MQTTYield(&handle->mqtt_client, timeout_ms);
+    if (rc == MQTT_CONNECTION_LOST)
+    {
+        warning("mqtt server connection lost");
+        evrythng_disconnect(handle);
+        if (handle->conlost_callback)
+            (*handle->conlost_callback)(handle);
+    }
 }
 
 
@@ -535,7 +540,7 @@ static evrythng_return_t evrythng_publish(
 
     MQTTMessage msg = {
         .qos = handle->qos, 
-        .retained = 0, 
+        .retained = 1, 
         .dup = 0,
         .id = 0,
         .payload = (void*)property_json,

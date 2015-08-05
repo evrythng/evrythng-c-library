@@ -244,6 +244,9 @@ evrythng_return_t evrythng_disconnect(evrythng_handle_t handle);
 void evrythng_message_loop(evrythng_handle_t handle);
 
 //TODO
+void evrythng_message_cycle(evrythng_handle_t handle, int timeout_ms);
+
+//TODO
 void evrythng_stop(evrythng_handle_t handle);
 
 
