@@ -67,11 +67,23 @@ int NetworkConnect(Network* n, char* hostname, int port)
     wiced_ip_address_t ip_address;
     wiced_result_t rc = -1;
 
-    rc = wiced_hostname_lookup(hostname, &ip_address, 10000);
+    int attempt  = 1;
+
+    do
+    {
+        platform_printf("trying to resolve hostname (attempt %d)\n", attempt);
+        if ((rc = wiced_hostname_lookup(hostname, &ip_address, 10000)) == WICED_SUCCESS)
+        {
+            platform_printf("hostname resolved\n");
+            break;
+        }
+    }
+    while (++attempt <= 5);
+
     if (rc != WICED_SUCCESS)
     {
         platform_printf("failed to resolve ip address of %s, rc = %d\n", hostname, rc);
-        goto exit;
+        return rc;
     }
 
     if (n->tls_enabled)
@@ -82,13 +94,11 @@ int NetworkConnect(Network* n, char* hostname, int port)
     if (rc != WICED_SUCCESS)
     {
         platform_printf("tcp socket creation failed, rc = %d\n", rc);
-        goto exit;
+        return rc;
     }
 
     if (n->tls_enabled)
         wiced_tcp_enable_tls(&n->socket, &n->tls_context);
-
-    //wiced_tcp_bind(&n->socket, WICED_ANY_PORT);
 
     rc = wiced_tcp_connect(&n->socket, &ip_address, port, 5000);
     if (rc != WICED_SUCCESS)
@@ -272,7 +282,7 @@ int SemaphoreWait(Semaphore* s, int timeout_ms)
     wiced_result_t rc = wiced_rtos_get_semaphore(&s->sem, timeout_ms);
     if (rc != WICED_SUCCESS)
     {
-        platform_printf("%s: FAILED to post semaphore %p: %d\n", __func__, &s->sem, rc);
+        platform_printf("%s: FAILED to wait semaphore %p: %d\n", __func__, &s->sem, rc);
         return -1;
     }
 

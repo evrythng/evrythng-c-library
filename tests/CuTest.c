@@ -132,6 +132,7 @@ void CuTestDelete(CuTest *t)
 
 void CuTestRun(CuTest* tc)
 {
+#if 0
 	jmp_buf buf;
 	tc->jumpBuf = &buf;
 	if (setjmp(buf) == 0)
@@ -140,6 +141,10 @@ void CuTestRun(CuTest* tc)
 		(tc->function)(tc);
 	}
 	tc->jumpBuf = 0;
+#else
+    tc->ran = 1;
+    (tc->function)(tc);
+#endif
 }
 
 static void CuFailInternal(CuTest* tc, const char* file, int line, CuString* string)

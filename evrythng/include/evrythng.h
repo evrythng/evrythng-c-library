@@ -73,13 +73,6 @@ typedef void (*connection_lost_callback)(evrythng_handle_t handle);
 typedef void sub_callback(const char* str_json, size_t length);
 
 
-/** @brief Callback prototype used for publish functions,
- *  	   which is called on message delivered event from the
- *  	   Evrythng cloud.
- */
-typedef void pub_callback(void);
-
-
 /** @brief Initialize context.
  *
  * Use this function to initialize context which contains Evrythng client configuration
@@ -165,21 +158,6 @@ evrythng_return_t evrythng_set_client_id(evrythng_handle_t handle, const char* c
 evrythng_return_t evrythng_set_qos(evrythng_handle_t handle, int qos);
 
 
-/** @brief Set certificate to use for encrypted connection.
- *
- * Use this function to set certificate to internal context.
- *
- * @param[in] handle A pointer to context handle.
- * @param[in] cert A pointer to certificate.
- * @param[in] size Size in bytes of a certificate.
- *
- * @return    \b EVRYTHNG_BAD_ARGS     if handle or key is a null pointer or size <= 0 \n
- *            \b EVRYTHNG_MEMORY_ERROR if an error occured while allocating memory \n
- *            \b EVRYTHNG_SUCCESS      on success \n
- */
-evrythng_return_t evrythng_set_certificate(evrythng_handle_t handle, const char* cert, size_t size);
-
-
 /** @brief Set log callback
  *
  * Use this function to set log callback to internal context 
@@ -241,13 +219,7 @@ evrythng_return_t evrythng_disconnect(evrythng_handle_t handle);
 
 
 //TODO
-void evrythng_message_loop(evrythng_handle_t handle);
-
-//TODO
 void evrythng_message_cycle(evrythng_handle_t handle, int timeout_ms);
-
-//TODO
-void evrythng_stop(evrythng_handle_t handle);
 
 
 /** @brief Publish a single property to a given thing.
@@ -258,7 +230,6 @@ void evrythng_stop(evrythng_handle_t handle);
  * @param[in] thng_id A     A thing ID.
  * @param[in] property_name The name of the property.
  * @param[in] property_json A JSON string which contains property value. 
- * @param[in] callback      A pointer to a publish callback function.
  * 
  * @return    \b EVRYTHNG_BAD_ARGS if one the arguments is a null pointer or a too long string \n
  *            \b EVRYTHNG_PUBLISH_ERROR if an error occured trying to publish a message \n
@@ -270,8 +241,7 @@ evrythng_return_t evrythng_publish_thng_property(
         evrythng_handle_t handle, 
         const char* thng_id, 
         const char* property_name, 
-        const char* property_json, 
-        pub_callback *callback);
+        const char* property_json);
 
 
 /** @brief Subscribe to a single property of the thing.
@@ -360,7 +330,6 @@ evrythng_return_t evrythng_unsubscribe_thng_properties(
  * @param[in] handle          A context handle.
  * @param[in] thng_id         A thing ID.
  * @param[in] properties_json A JSON string which contains properties values. 
- * @param[in] callback        A pointer to a publish callback function. 
  *
  * @return    \b EVRYTHNG_BAD_ARGS if one the arguments is a null pointer or a too long string \n
  *            \b EVRYTHNG_PUBLISH_ERROR if an error occured trying to publish a message \n
@@ -371,8 +340,7 @@ evrythng_return_t evrythng_unsubscribe_thng_properties(
 evrythng_return_t evrythng_publish_thng_properties(
         evrythng_handle_t handle, 
         const char* thng_id, 
-        const char* properties_json, 
-        pub_callback *callback);
+        const char* properties_json);
 
 
 /** @brief Subscribe to a single action of the thing.
@@ -461,7 +429,6 @@ evrythng_return_t evrythng_unsubscribe_thng_actions(
  * @param[in] thng_id     A thing ID.
  * @param[in] action_name The name of an action.
  * @param[in] action_json A JSON string which contains an action. 
- * @param[in] callback    A pointer to a publish callback function. 
  *
  * @return    \b EVRYTHNG_BAD_ARGS if one the arguments is a null pointer or a too long string \n
  *            \b EVRYTHNG_PUBLISH_ERROR if an error occured trying to publish a message \n
@@ -473,8 +440,7 @@ evrythng_return_t evrythng_publish_thng_action(
         evrythng_handle_t handle, 
         const char* thng_id, 
         const char* action_name, 
-        const char* action_json, 
-        pub_callback *callback);
+        const char* action_json);
 
 
 /** @brief Publish a few actions to a given thing.
@@ -484,7 +450,6 @@ evrythng_return_t evrythng_publish_thng_action(
  * @param[in] handle       A context handle.
  * @param[in] thng_id      A thing ID.
  * @param[in] actions_json A JSON string which contains actions. 
- * @param[in] callback     A pointer to a publish callback function. 
  *
  * @return    \b EVRYTHNG_BAD_ARGS if one the arguments is a null pointer or a too long string \n
  *            \b EVRYTHNG_PUBLISH_ERROR if an error occured trying to publish a message \n
@@ -495,8 +460,7 @@ evrythng_return_t evrythng_publish_thng_action(
 evrythng_return_t evrythng_publish_thng_actions(
         evrythng_handle_t handle, 
         const char* thng_id, 
-        const char* actions_json, 
-        pub_callback *callback);
+        const char* actions_json);
 
 
 /** @brief Subscribe to a location of the thing.
@@ -543,7 +507,6 @@ evrythng_return_t evrythng_unsubscribe_thng_location(
  * @param[in] handle        A context handle.
  * @param[in] thng_id       A thing ID.
  * @param[in] location_json A JSON string which contains location. 
- * @param[in] callback      A pointer to a publish callback function. 
  *
  * @return    \b EVRYTHNG_BAD_ARGS if one the arguments is a null pointer or a too long string \n
  *            \b EVRYTHNG_PUBLISH_ERROR if an error occured trying to publish a message \n
@@ -554,8 +517,7 @@ evrythng_return_t evrythng_unsubscribe_thng_location(
 evrythng_return_t evrythng_publish_thng_location(
         evrythng_handle_t handle, 
         const char* thng_id, 
-        const char* location_json, 
-        pub_callback *callback);
+        const char* location_json);
 
 
 /** @brief Subscribe to a single property of the product.
@@ -645,7 +607,6 @@ evrythng_return_t evrythng_unsubscribe_product_properties(
  * @param[in] product_id    A product ID.
  * @param[in] property_name The name of the property.
  * @param[in] property_json A JSON string which contains property value. 
- * @param[in] callback      A pointer to a publish callback function. 
  *
  * @return    \b EVRYTHNG_BAD_ARGS if one the arguments is a null pointer or a too long string \n
  *            \b EVRYTHNG_PUBLISH_ERROR if an error occured trying to publish a message \n
@@ -657,8 +618,7 @@ evrythng_return_t evrythng_publish_product_property(
         evrythng_handle_t handle, 
         const char* product_id, 
         const char* property_name, 
-        const char* property_json, 
-        pub_callback *callback);
+        const char* property_json);
 
 
 /** @brief Publish a few properties to a given product.
@@ -668,7 +628,6 @@ evrythng_return_t evrythng_publish_product_property(
  * @param[in] handle          A context handle.
  * @param[in] product_id      A product ID.
  * @param[in] properties_json A JSON string which contains properties values. 
- * @param[in] callback        A pointer to a publish callback function. 
  *
  * @return    \b EVRYTHNG_BAD_ARGS if one the arguments is a null pointer or a too long string \n
  *            \b EVRYTHNG_PUBLISH_ERROR if an error occured trying to publish a message \n
@@ -679,8 +638,7 @@ evrythng_return_t evrythng_publish_product_property(
 evrythng_return_t evrythng_publish_product_properties(
         evrythng_handle_t handle, 
         const char* product_id, 
-        const char* properties_json, 
-        pub_callback *callback);
+        const char* properties_json);
 
 
 /** @brief Subscribe to a single action of the product.
@@ -769,7 +727,6 @@ evrythng_return_t evrythng_unsubscribe_product_actions(
  * @param[in] product_id  A product ID.
  * @param[in] action_name The name of an action.
  * @param[in] action_json A JSON string which contains an action. 
- * @param[in] callback    A pointer to a publish callback function. 
  *
  * @return    \b EVRYTHNG_BAD_ARGS if one the arguments is a null pointer or a too long string \n
  *            \b EVRYTHNG_PUBLISH_ERROR if an error occured trying to publish a message \n
@@ -781,8 +738,7 @@ evrythng_return_t evrythng_publish_product_action(
         evrythng_handle_t handle, 
         const char* product_id, 
         const char* action_name, 
-        const char* action_json, 
-        pub_callback *callback);
+        const char* action_json);
 
 
 /** @brief Publish a few actions to a given product.
@@ -792,7 +748,6 @@ evrythng_return_t evrythng_publish_product_action(
  * @param[in] handle       A context handle.
  * @param[in] product_id   A product ID.
  * @param[in] actions_json A JSON string which contains actions. 
- * @param[in] callback     A pointer to a publish callback function. 
  *
  * @return    \b EVRYTHNG_BAD_ARGS if one the arguments is a null pointer or a too long string \n
  *            \b EVRYTHNG_PUBLISH_ERROR if an error occured trying to publish a message \n
@@ -803,8 +758,7 @@ evrythng_return_t evrythng_publish_product_action(
 evrythng_return_t evrythng_publish_product_actions(
         evrythng_handle_t handle, 
         const char* product_id, 
-        const char* actions_json, 
-        pub_callback *callback);
+        const char* actions_json);
 
 
 /** @brief Subscribe to a single action.
@@ -884,7 +838,6 @@ evrythng_return_t evrythng_unsubscribe_actions(
  * @param[in] handle      A context handle.
  * @param[in] action_name The name of an action.
  * @param[in] action_json A JSON string which contains an action. 
- * @param[in] callback    A pointer to a publish callback function. 
  *
  * @return    \b EVRYTHNG_BAD_ARGS if one the arguments is a null pointer or a too long string \n
  *            \b EVRYTHNG_PUBLISH_ERROR if an error occured trying to publish a message \n
@@ -895,8 +848,7 @@ evrythng_return_t evrythng_unsubscribe_actions(
 evrythng_return_t evrythng_publish_action(
         evrythng_handle_t handle, 
         const char* action_name, 
-        const char* action_json, 
-        pub_callback *callback);
+        const char* action_json);
 
 
 /** @brief Publish a few actions.
@@ -905,7 +857,6 @@ evrythng_return_t evrythng_publish_action(
  *
  * @param[in] handle       A context handle.
  * @param[in] actions_json A JSON string which contains actions. 
- * @param[in] callback     A pointer to a publish callback function. 
  *
  * @return    \b EVRYTHNG_BAD_ARGS if one the arguments is a null pointer or a too long string \n
  *            \b EVRYTHNG_PUBLISH_ERROR if an error occured trying to publish a message \n
@@ -915,8 +866,7 @@ evrythng_return_t evrythng_publish_action(
  */
 evrythng_return_t evrythng_publish_actions(
         evrythng_handle_t handle, 
-        const char* actions_json, 
-        pub_callback *callback);
+        const char* actions_json);
 
 
 #endif //_EVRYTHNG_H

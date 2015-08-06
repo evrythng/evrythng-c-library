@@ -1,14 +1,8 @@
-#include "evrythng.h"
-
 #include <string.h>
-#include "CuTest.h"
 
-#if defined(NO_FILESYSTEM)
-#include "evrythng_tls_certificate.h"
-#endif
-
+#include "evrythng.h"
 #include "evrythng_config.h"
-
+#include "CuTest.h"
 
 #define PROPERTY_VALUE_JSON "[{\"value\": 500}]"
 #define PROPERTIES_VALUE_JSON "[{\"key\": \"property_1\", \"value\": 500}, {\"key\": \"property_2\", \"value\": 100}]"
@@ -25,36 +19,40 @@ void vApplicationIdleHook(void)
 }
 #endif
 
-
-Semaphore sub_sem;
-Semaphore pub_sem;
-Thread t;
+static int stop_cycling;
+static Semaphore sub_sem;
+static Thread t;
 
 
 void evrythng_process(void* arg)
 {
     platform_printf("%s STARTED\n", __func__);
-    evrythng_message_loop((evrythng_handle_t)arg);
+    while (!stop_cycling)
+    {
+        evrythng_message_cycle((evrythng_handle_t)arg, 200);
+        platform_sleep(100);
+    }
     platform_printf("%s STOPPED\n", __func__);
 }
 
 
 void start_processing_thread(evrythng_handle_t handle)
 {
+    stop_cycling = 0;
     ThreadCreate(&t, 0, "mqtt_loop", evrythng_process, 8192, handle);
 }
 
 
 void conlost_callback(evrythng_handle_t handle)
 {
-    evrythng_stop(handle);
+    stop_cycling = 1;
 }
 
 
 void stop_processing_thread(evrythng_handle_t handle)
 {
-    evrythng_stop(handle);
-    ThreadJoin(&t, 20000);
+    stop_cycling = 1;
+    ThreadJoin(&t, 10000);
     ThreadDestroy(&t);
 }
 
@@ -80,27 +78,10 @@ void log_callback(evrythng_log_level_t level, const char* fmt, va_list vl)
             platform_printf("DEBUG: ");
             break;
     }
-    platform_printf("%s\n\r", msg);
+    platform_printf("%s\n", msg);
 }
 
-#define START_PUBSUB \
-    PRINT_START_MEM_STATS \
-    evrythng_handle_t h1;\
-    evrythng_handle_t h2;\
-    common_tcp_init_handle(&h1);\
-    common_tcp_init_handle(&h2);\
-    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, evrythng_connect(h1));\
-    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, evrythng_connect(h2));
-
-#define END_PUBSUB \
-    CuAssertIntEquals(tc, 0, SemaphoreWait(&pub_sem, 10000));\
-    CuAssertIntEquals(tc, 0, SemaphoreWait(&sub_sem, 10000));\
-    evrythng_disconnect(h1);\
-    evrythng_disconnect(h2);\
-    evrythng_destroy_handle(h1);\
-    evrythng_destroy_handle(h2);\
-    PRINT_END_MEM_STATS
-
+#if 0
 
 #define START_SINGLE_CONNECTION \
     PRINT_START_MEM_STATS \
@@ -115,6 +96,33 @@ void log_callback(evrythng_log_level_t level, const char* fmt, va_list vl)
     evrythng_disconnect(h1);\
     evrythng_destroy_handle(h1);\
     PRINT_END_MEM_STATS
+
+#else
+
+#define START_SINGLE_CONNECTION \
+    PRINT_START_MEM_STATS \
+    evrythng_handle_t h1;\
+    common_tcp_init_handle(&h1);\
+    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, evrythng_connect(h1));\
+
+#define END_SINGLE_CONNECTION \
+    Timer t; TimerInit(&t);\
+    TimerCountdownMS(&t, 10000);\
+    int rc = 0;\
+    do \
+    {\
+        evrythng_message_cycle(h1, 200);\
+        platform_sleep(100);\
+        rc = SemaphoreWait(&sub_sem, 0);\
+        if (rc == 0)\
+            break;\
+    } while (TimerLeftMS(&t) > 0);\
+    CuAssertIntEquals(tc, 0, rc);\
+    evrythng_disconnect(h1);\
+    evrythng_destroy_handle(h1);\
+    PRINT_END_MEM_STATS
+
+#endif
 
 
 #if defined(CONFIG_OS_FREERTOS) && !defined(FREERTOS_SIMULATOR)
@@ -189,24 +197,6 @@ void test_set_client_id_ok(CuTest* tc)
     evrythng_destroy_handle(h);
 }
 
-void test_set_ca_ok(CuTest* tc)
-{
-    evrythng_handle_t h;
-    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, evrythng_init_handle(&h));
-    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, evrythng_set_certificate(h, "123", 3));
-    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, evrythng_set_certificate(h, "1", 1));
-    evrythng_destroy_handle(h);
-}
-
-void test_set_ca_fail(CuTest* tc)
-{
-    evrythng_handle_t h;
-    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, evrythng_init_handle(&h));
-    CuAssertIntEquals(tc, EVRYTHNG_BAD_ARGS, evrythng_set_certificate(h, "123", 0));
-    CuAssertIntEquals(tc, EVRYTHNG_BAD_ARGS, evrythng_set_certificate(h, 0, 1));
-    evrythng_destroy_handle(h);
-}
-
 void test_set_qos_ok(CuTest* tc)
 {
     evrythng_handle_t h;
@@ -246,11 +236,6 @@ static void common_tcp_init_handle(evrythng_handle_t* h)
     evrythng_set_log_callback(*h, log_callback);
     evrythng_set_conlost_callback(*h, conlost_callback);
     evrythng_set_key(*h, DEVICE_API_KEY);
-#if defined(NO_FILESYSTEM)
-    evrythng_set_certificate(*h, cert_buffer, sizeof(cert_buffer) - 1);
-#else
-    evrythng_set_certificate(*h, "client.pem", strlen("client.pem")+1);
-#endif
 }
 
 void test_tcp_connect_ok1(CuTest* tc)
@@ -271,12 +256,6 @@ void test_tcp_connect_ok2(CuTest* tc)
     CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, evrythng_disconnect(h1));
     evrythng_destroy_handle(h1);
     PRINT_END_MEM_STATS
-}
-
-static void test_pub_callback()
-{
-    platform_printf("%s: message published\n\r", __func__);
-    SemaphorePost(&pub_sem);
 }
 
 static void test_sub_callback(const char* str_json, size_t len)
@@ -345,7 +324,7 @@ void test_pubsub_thng_prop(CuTest* tc)
 {
     START_SINGLE_CONNECTION
     CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, evrythng_subscribe_thng_property(h1, THNG_1, PROPERTY_1, test_sub_callback));
-    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, evrythng_publish_thng_property(h1, THNG_1, PROPERTY_1, PROPERTY_VALUE_JSON, test_pub_callback));
+    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, evrythng_publish_thng_property(h1, THNG_1, PROPERTY_1, PROPERTY_VALUE_JSON));
     END_SINGLE_CONNECTION
 }
 
@@ -353,7 +332,7 @@ void test_pubsuball_thng_prop(CuTest* tc)
 {
     START_SINGLE_CONNECTION
     CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, evrythng_subscribe_thng_properties(h1, THNG_1, test_sub_callback));
-    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, evrythng_publish_thng_properties(h1, THNG_1, PROPERTIES_VALUE_JSON, test_pub_callback));
+    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, evrythng_publish_thng_properties(h1, THNG_1, PROPERTIES_VALUE_JSON));
     END_SINGLE_CONNECTION
 }
 
@@ -361,7 +340,7 @@ void test_pubsub_thng_action(CuTest* tc)
 {
     START_SINGLE_CONNECTION
     CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, evrythng_subscribe_thng_action(h1, THNG_1, ACTION_1, test_sub_callback));
-    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, evrythng_publish_thng_action(h1, THNG_1, ACTION_1, ACTION_JSON, test_pub_callback));
+    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, evrythng_publish_thng_action(h1, THNG_1, ACTION_1, ACTION_JSON));
     END_SINGLE_CONNECTION
 }
 
@@ -369,7 +348,7 @@ void test_pubsuball_thng_actions(CuTest* tc)
 {
     START_SINGLE_CONNECTION
     CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, evrythng_subscribe_thng_actions(h1, THNG_1, test_sub_callback));
-    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, evrythng_publish_thng_actions(h1, THNG_1, ACTION_JSON, test_pub_callback));
+    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, evrythng_publish_thng_actions(h1, THNG_1, ACTION_JSON));
     END_SINGLE_CONNECTION
 }
 
@@ -377,7 +356,7 @@ void test_pubsub_thng_location(CuTest* tc)
 {
     START_SINGLE_CONNECTION
     CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, evrythng_subscribe_thng_location(h1, THNG_1, test_sub_callback));
-    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, evrythng_publish_thng_location(h1, THNG_1, LOCATION_JSON, test_pub_callback));
+    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, evrythng_publish_thng_location(h1, THNG_1, LOCATION_JSON));
     END_SINGLE_CONNECTION
 }
 
@@ -385,7 +364,7 @@ void test_pubsub_prod_prop(CuTest* tc)
 {
     START_SINGLE_CONNECTION
     CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, evrythng_subscribe_product_property(h1, PRODUCT_1, PROPERTY_1, test_sub_callback));
-    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, evrythng_publish_product_property(h1, PRODUCT_1, PROPERTY_1, PROPERTY_VALUE_JSON, test_pub_callback));
+    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, evrythng_publish_product_property(h1, PRODUCT_1, PROPERTY_1, PROPERTY_VALUE_JSON));
     END_SINGLE_CONNECTION
 }
 
@@ -393,7 +372,7 @@ void test_pubsuball_prod_prop(CuTest* tc)
 {
     START_SINGLE_CONNECTION
     CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, evrythng_subscribe_product_properties(h1, PRODUCT_1, test_sub_callback));
-    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, evrythng_publish_product_properties(h1, PRODUCT_1, PROPERTIES_VALUE_JSON, test_pub_callback));
+    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, evrythng_publish_product_properties(h1, PRODUCT_1, PROPERTIES_VALUE_JSON));
     END_SINGLE_CONNECTION
 }
 
@@ -401,7 +380,7 @@ void test_pubsub_prod_action(CuTest* tc)
 {
     START_SINGLE_CONNECTION
     CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, evrythng_subscribe_product_action(h1, PRODUCT_1, ACTION_1, test_sub_callback));
-    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, evrythng_publish_product_action(h1, PRODUCT_1, ACTION_1, ACTION_JSON, test_pub_callback));
+    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, evrythng_publish_product_action(h1, PRODUCT_1, ACTION_1, ACTION_JSON));
     END_SINGLE_CONNECTION
 }
 
@@ -409,7 +388,7 @@ void test_pubsuball_prod_actions(CuTest* tc)
 {
     START_SINGLE_CONNECTION
     CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, evrythng_subscribe_product_actions(h1, PRODUCT_1, test_sub_callback));
-    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, evrythng_publish_product_actions(h1, PRODUCT_1, ACTION_JSON, test_pub_callback));
+    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, evrythng_publish_product_actions(h1, PRODUCT_1, ACTION_JSON));
     END_SINGLE_CONNECTION
 }
 
@@ -417,7 +396,7 @@ void test_pubsub_action(CuTest* tc)
 {
     START_SINGLE_CONNECTION
     CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, evrythng_subscribe_action(h1, ACTION_1, test_sub_callback));
-    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, evrythng_publish_action(h1, ACTION_1, ACTION_JSON, test_pub_callback));
+    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, evrythng_publish_action(h1, ACTION_1, ACTION_JSON));
     END_SINGLE_CONNECTION
 }
 
@@ -425,7 +404,7 @@ void test_pubsuball_actions(CuTest* tc)
 {
     START_SINGLE_CONNECTION
     CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, evrythng_subscribe_actions(h1, test_sub_callback));
-    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, evrythng_publish_actions(h1, ACTION_JSON, test_pub_callback));
+    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, evrythng_publish_actions(h1, ACTION_JSON));
     END_SINGLE_CONNECTION
 }
 
@@ -441,20 +420,17 @@ CuSuite* CuGetSuite(void)
 	SUITE_ADD_TEST(suite, test_set_url_fail);
 	SUITE_ADD_TEST(suite, test_set_key_ok);
 	SUITE_ADD_TEST(suite, test_set_client_id_ok);
-	SUITE_ADD_TEST(suite, test_set_ca_ok);
-	SUITE_ADD_TEST(suite, test_set_ca_fail);
 	SUITE_ADD_TEST(suite, test_set_qos_ok);
 	SUITE_ADD_TEST(suite, test_set_qos_fail);
 	SUITE_ADD_TEST(suite, test_set_callback_ok);
 	SUITE_ADD_TEST(suite, test_set_callback_fail);
-
 	SUITE_ADD_TEST(suite, test_tcp_connect_ok1);
 	SUITE_ADD_TEST(suite, test_tcp_connect_ok2);
 
 	SUITE_ADD_TEST(suite, test_subunsub_thng);
 	SUITE_ADD_TEST(suite, test_subunsub_prod);
-
 #endif
+
 	SUITE_ADD_TEST(suite, test_pubsub_thng_prop);
 	SUITE_ADD_TEST(suite, test_pubsuball_thng_prop);
 #if 1
@@ -480,7 +456,6 @@ CuSuite* CuGetSuite(void)
 void RunAllTests()
 {
     SemaphoreInit(&sub_sem);
-    SemaphoreInit(&pub_sem);
 
 	CuString *output = CuStringNew();
     CuSuite* suite = CuGetSuite();
@@ -493,6 +468,5 @@ void RunAllTests()
     CuSuiteDelete(suite);
 
     SemaphoreDeinit(&sub_sem);
-    SemaphoreDeinit(&pub_sem);
 }
 

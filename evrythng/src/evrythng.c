@@ -31,7 +31,6 @@ struct evrythng_ctx_t {
     int     secure_connection;
     int     qos;
     int     initialized;
-    int     stop;
 
     unsigned char serialize_buffer[1024];
     unsigned char read_buffer[1024];
@@ -85,6 +84,13 @@ evrythng_return_t evrythng_init_handle(evrythng_handle_t* handle)
 
     (*handle)->ca_buf = cert_buffer;
     (*handle)->ca_size = sizeof cert_buffer;
+
+	MQTTClientInit(
+            &(*handle)->mqtt_client, 
+            &(*handle)->mqtt_network, 
+            5000, 
+            (*handle)->serialize_buffer, sizeof((*handle)->serialize_buffer), 
+            (*handle)->read_buffer, sizeof((*handle)->read_buffer));
 
     return EVRYTHNG_SUCCESS;
 }
@@ -186,26 +192,6 @@ evrythng_return_t evrythng_set_client_id(evrythng_handle_t handle, const char* c
     handle->mqtt_conn_opts.clientID.cstring = handle->client_id;
     return r;
 }
-
-
-#if 0
-evrythng_return_t evrythng_set_certificate(evrythng_handle_t handle, const char* cert, size_t size)
-{
-    if (!handle || !cert || size <= 0)
-        return EVRYTHNG_BAD_ARGS;
-    int r = replace_str(&handle->ca_buf, cert, size);
-    handle->ca_size = size;
-
-#if 0
-    handle->mqtt_ssl_opts.trustStore = handle->ca_buf;
-#endif
-
-#if defined(NO_FILESYSTEM)
-    handle->mqtt_ssl_opts.trustStore_size = size;
-#endif
-    return r;
-}
-#endif
 
 
 evrythng_return_t evrythng_set_log_callback(evrythng_handle_t handle, evrythng_log_callback callback)
@@ -327,24 +313,6 @@ void message_callback(MessageData* data, void* userdata)
 }
 
 
-void evrythng_stop(evrythng_handle_t handle)
-{
-    handle->stop++;
-}
-
-
-void evrythng_message_loop(evrythng_handle_t handle)
-{
-    while (!handle->stop)
-    {
-        evrythng_message_cycle(handle, 500);
-        platform_sleep(100);
-    }
-
-    debug("mqtt processing thread exit");
-}
-
-
 void evrythng_message_cycle(evrythng_handle_t handle, int timeout_ms)
 {
     int rc = MQTTYield(&handle->mqtt_client, timeout_ms);
@@ -370,14 +338,6 @@ evrythng_return_t evrythng_connect(evrythng_handle_t handle)
         NetworkSecuredInit(&handle->mqtt_network, handle->ca_buf, sizeof handle->ca_buf);
     else
         NetworkInit(&handle->mqtt_network);
-
-	MQTTClientInit(
-            &handle->mqtt_client, 
-            &handle->mqtt_network, 
-            5000, 
-            handle->serialize_buffer, sizeof(handle->serialize_buffer), 
-            handle->read_buffer, sizeof(handle->read_buffer));
-
 
     if (!handle->client_id)
     {
@@ -497,8 +457,7 @@ static evrythng_return_t evrythng_publish(
         const char* entity_id, 
         const char* data_type, 
         const char* data_name, 
-        const char* property_json, 
-        pub_callback *callback)
+        const char* property_json)
 {
     if (!handle) return EVRYTHNG_BAD_ARGS;
 
@@ -626,7 +585,7 @@ static evrythng_return_t evrythng_subscribe(
     }
     else 
     {
-        debug("subscribtion failed, rc=%d", rc);
+        debug("subscription failed, rc=%d", rc);
 
         rm_sub_callback(handle, sub_topic);
 
@@ -702,13 +661,12 @@ evrythng_return_t evrythng_publish_thng_property(
         evrythng_handle_t handle, 
         const char* thng_id, 
         const char* property_name, 
-        const char* property_json, 
-        pub_callback *callback)
+        const char* property_json)
 {
     if (!thng_id || !property_name || !property_json)
         return EVRYTHNG_BAD_ARGS;
 
-    return evrythng_publish(handle, "thngs", thng_id, "properties", property_name, property_json, callback);
+    return evrythng_publish(handle, "thngs", thng_id, "properties", property_name, property_json);
 }
 
 
@@ -762,13 +720,12 @@ evrythng_return_t evrythng_unsubscribe_thng_properties(
 evrythng_return_t evrythng_publish_thng_properties(
         evrythng_handle_t handle, 
         const char* thng_id, 
-        const char* properties_json, 
-        pub_callback *callback)
+        const char* properties_json)
 {
     if (!thng_id || !properties_json)
         return EVRYTHNG_BAD_ARGS;
 
-    return evrythng_publish(handle, "thngs", thng_id, "properties", NULL, properties_json, callback);
+    return evrythng_publish(handle, "thngs", thng_id, "properties", NULL, properties_json);
 }
 
 
@@ -824,26 +781,24 @@ evrythng_return_t evrythng_publish_thng_action(
         evrythng_handle_t handle, 
         const char* thng_id, 
         const char* action_name, 
-        const char* action_json, 
-        pub_callback *callback)
+        const char* action_json)
 {
     if (!thng_id || !action_name || !action_json)
         return EVRYTHNG_BAD_ARGS;
 
-    return evrythng_publish(handle, "thngs", thng_id, "actions", action_name, action_json, callback);
+    return evrythng_publish(handle, "thngs", thng_id, "actions", action_name, action_json);
 }
 
 
 evrythng_return_t evrythng_publish_thng_actions(
         evrythng_handle_t handle, 
         const char* thng_id, 
-        const char* actions_json, 
-        pub_callback *callback)
+        const char* actions_json)
 {
     if (!thng_id || !actions_json)
         return EVRYTHNG_BAD_ARGS;
 
-    return evrythng_publish(handle, "thngs", thng_id, "actions", "all", actions_json, callback);
+    return evrythng_publish(handle, "thngs", thng_id, "actions", "all", actions_json);
 }
 
 
@@ -873,13 +828,12 @@ evrythng_return_t evrythng_unsubscribe_thng_location(
 evrythng_return_t evrythng_publish_thng_location(
         evrythng_handle_t handle, 
         const char* thng_id, 
-        const char* location_json, 
-        pub_callback *callback)
+        const char* location_json)
 {
     if (!thng_id || !location_json)
         return EVRYTHNG_BAD_ARGS;
 
-    return evrythng_publish(handle, "thngs", thng_id, "location", NULL, location_json, callback);
+    return evrythng_publish(handle, "thngs", thng_id, "location", NULL, location_json);
 }
 
 
@@ -935,26 +889,24 @@ evrythng_return_t evrythng_publish_product_property(
         evrythng_handle_t handle, 
         const char* product_id, 
         const char* property_name, 
-        const char* property_json, 
-        pub_callback *callback)
+        const char* property_json)
 {
     if (!product_id || !property_name || !property_json)
         return EVRYTHNG_BAD_ARGS;
 
-    return evrythng_publish(handle, "products", product_id, "properties", property_name, property_json, callback);
+    return evrythng_publish(handle, "products", product_id, "properties", property_name, property_json);
 }
 
 
 evrythng_return_t evrythng_publish_product_properties(
         evrythng_handle_t handle, 
         const char* product_id, 
-        const char* properties_json, 
-        pub_callback *callback)
+        const char* properties_json)
 {
     if (!product_id || !properties_json)
         return EVRYTHNG_BAD_ARGS;
 
-    return evrythng_publish(handle, "products", product_id, "properties", NULL, properties_json, callback);
+    return evrythng_publish(handle, "products", product_id, "properties", NULL, properties_json);
 }
 
 
@@ -1010,26 +962,24 @@ evrythng_return_t evrythng_publish_product_action(
         evrythng_handle_t handle, 
         const char* product_id, 
         const char* action_name, 
-        const char* action_json, 
-        pub_callback *callback)
+        const char* action_json)
 {
     if (!product_id || !action_name || !action_json)
         return EVRYTHNG_BAD_ARGS;
 
-    return evrythng_publish(handle, "products", product_id, "actions", action_name, action_json, callback);
+    return evrythng_publish(handle, "products", product_id, "actions", action_name, action_json);
 }
 
 
 evrythng_return_t evrythng_publish_product_actions(
         evrythng_handle_t handle, 
         const char* product_id, 
-        const char* actions_json, 
-        pub_callback *callback)
+        const char* actions_json)
 {
     if (!product_id || !actions_json)
         return EVRYTHNG_BAD_ARGS;
 
-    return evrythng_publish(handle, "products", product_id, "actions", "all", actions_json, callback);
+    return evrythng_publish(handle, "products", product_id, "actions", "all", actions_json);
 }
 
 
@@ -1074,23 +1024,21 @@ evrythng_return_t evrythng_unsubscribe_actions(evrythng_handle_t handle)
 evrythng_return_t evrythng_publish_action(
         evrythng_handle_t handle, 
         const char* action_name, 
-        const char* action_json, 
-        pub_callback *callback)
+        const char* action_json)
 {
     if (!action_name || !action_json)
         return EVRYTHNG_BAD_ARGS;
 
-    return evrythng_publish(handle, "actions", NULL, NULL, action_name, action_json, callback);
+    return evrythng_publish(handle, "actions", NULL, NULL, action_name, action_json);
 }
 
 
 evrythng_return_t evrythng_publish_actions(
         evrythng_handle_t handle, 
-        const char* actions_json, 
-        pub_callback *callback)
+        const char* actions_json)
 {
     if (!actions_json)
         return EVRYTHNG_BAD_ARGS;
 
-    return evrythng_publish(handle, "actions", NULL, NULL, "all", actions_json, callback);
+    return evrythng_publish(handle, "actions", NULL, NULL, "all", actions_json);
 }
