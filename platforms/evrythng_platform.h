@@ -5,8 +5,8 @@
     #include "POSIX/types.h"
 #elif defined(WICED_PLATFORM)
     #include "WICED/types.h"
-#elif defined(MARVELL_PLATFROM)
-    #include ".h"
+#elif defined(MARVELL_PLATFORM)
+    #include "marvell/types.h"
 #endif
 
 /* all failure return codes must be negative */

@@ -67,7 +67,7 @@ int NetworkConnect(Network* n, char* hostname, int port)
     wiced_ip_address_t ip_address;
     wiced_result_t rc = -1;
 
-    int attempt  = 1;
+    int attempt = 1;
 
     do
     {

@@ -1,5 +1,5 @@
-#if !defined(__MQTT_WICED_)
-#define __MQTT_WICED_
+#if !defined(_MQTT_WICED_)
+#define _MQTT_WICED_
 
 #include "wiced.h"
 
@@ -35,4 +35,4 @@ typedef struct Thread
 } Thread;
 
 
-#endif //__MQTT_WICED_
+#endif //_MQTT_WICED_

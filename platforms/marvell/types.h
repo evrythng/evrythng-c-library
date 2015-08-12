@@ -14,54 +14,42 @@
  *    Allan Stockdill-Mander - initial API and implementation and/or initial documentation
  *******************************************************************************/
 
-#if !defined(_MQTT_POSIX_)
-#define _MQTT_POSIX_
+#if !defined(_MQTT_MARVELL_)
+#define _MQTT_MARVELL_
 
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <sys/param.h>
-#include <sys/time.h>
-#include <sys/select.h>
-#include <netinet/in.h>
-#include <netinet/tcp.h>
-#include <arpa/inet.h>
-#include <netdb.h>
-#include <stdio.h>
-#include <unistd.h>
-#include <errno.h>
-#include <fcntl.h>
+#include <stddef.h>
+#include <wm_os.h>
 
-#include <stdlib.h>
-#include <string.h>
-#include <signal.h>
-#include <pthread.h>
-#include <semaphore.h>
+#include "FreeRTOS.h"
+#include "task.h"
 
 typedef struct Timer
 {
-	struct timeval end_time;
+	portTickType xTicksToWait;
+	xTimeOutType xTimeOut;
 } Timer;
 
 typedef struct Network
 {
-	int my_socket;
+    int socket;
 } Network;
 
 typedef struct Mutex
 {
-	pthread_mutex_t mtx;
+    os_mutex_t mutex;
 } Mutex;
 
 typedef struct Semaphore
 {
-    sem_t sem;
+    os_semaphore_t sem;
 } Semaphore;
 
 typedef struct Thread
 {
-    pthread_t tid;
+    os_thread_t tid;
     void* arg;
     void (*func)(void*);
+    Semaphore join_sem;
 } Thread;
 
-#endif //_MQTT_POSIX_
+#endif //_MQTT_MARVELL_

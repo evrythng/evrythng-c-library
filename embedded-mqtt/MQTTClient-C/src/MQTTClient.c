@@ -326,6 +326,7 @@ int MQTTYield(MQTTClient* c, int timeout_ms)
     int rc = MQTT_SUCCESS;
     Timer timer;
 
+
     TimerInit(&timer);
     TimerCountdownMS(&timer, timeout_ms);
 
@@ -527,7 +528,9 @@ int MQTTPublish(MQTTClient* c, const char* topicName, MQTTMessage* message)
     topic.cstring = (char *)topicName;
     int len = 0;
 
+                platform_printf("%s: %d \n", __func__, __LINE__);
 	MutexLock(&c->mutex);
+                platform_printf("%s: %d \n", __func__, __LINE__);
 	if (!c->isconnected)
 		goto exit;
 
@@ -541,11 +544,13 @@ int MQTTPublish(MQTTClient* c, const char* topicName, MQTTMessage* message)
               topic, (unsigned char*)message->payload, message->payloadlen);
     if (len <= 0)
         goto exit;
+                platform_printf("%s: %d \n", __func__, __LINE__);
     if ((rc = sendPacket(c, len, &timer)) != MQTT_SUCCESS) // send the subscribe packet
         goto exit; // there was a problem
 
     if (message->qos == QOS1)
     {
+                platform_printf("%s: %d \n", __func__, __LINE__);
         if (waitfor(c, PUBACK, &timer) == PUBACK)
         {
             unsigned short mypacketid;
@@ -573,7 +578,9 @@ int MQTTPublish(MQTTClient* c, const char* topicName, MQTTMessage* message)
     }
     
 exit:
+                platform_printf("%s: %d \n", __func__, __LINE__);
 	MutexUnlock(&c->mutex);
+                platform_printf("%s: %d \n", __func__, __LINE__);
     return rc;
 }
 
