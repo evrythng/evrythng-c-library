@@ -3,23 +3,9 @@
 
 #include <stdint.h>
 
-#if 1
-
 #include <autoconf.h>
 #include <wm_net.h>
 
-#else
-
-#include <lwip/lwipopts.h>
-#include <lwip/opt.h>
-#include <lwip/sockets.h>
-#include <lwip/tcpip.h>
-#include <lwip/ip.h>
-#include <lwip/netdb.h>
-#include <lwip/err.h>
-#include <lwip/inet.h>
-
-#endif
 
 void TimerInit(Timer* t)
 {
@@ -91,16 +77,34 @@ void NetworkInit(Network* n)
     }
 
     n->socket = 0;
+    n->tls_enabled = 0;
 }
 
 
 void NetworkSecuredInit(Network* n, const char* ca_buf, size_t ca_size)
 {
-    if (!n)
+    if (!n || !ca_buf || !ca_size)
     {
-        platform_printf("%s: invalid network\n", __func__);
+        platform_printf("%s: bad args\n", __func__);
         return;
     }
+
+	int rc = tls_lib_init();
+	if (rc != WM_SUCCESS) 
+    {
+        platform_printf("%s: failed to init tls lib\n", __func__);
+        return;
+    }
+
+	/* Initialize the TLS configuration structure */
+    memset(&n->tls_config, 0, sizeof n->tls_config);
+	n->tls_config = (tls_init_config_t){
+		.flags = TLS_CHECK_SERVER_CERT,
+		.tls.client.ca_cert = (unsigned char*)ca_buf,
+		.tls.client.ca_cert_size = ca_size - 1,
+	};
+
+    n->tls_enabled = 1;
 }
 
 
@@ -165,6 +169,15 @@ int NetworkConnect(Network* n, char* hostname, int port)
 			rc = connect(n->socket, (struct sockaddr*)&address, sizeof(address));
 	}
 
+    if (n->tls_enabled)
+    {
+        rc = tls_session_init(&n->tls_handle, n->socket, &n->tls_config);
+        if (rc != WM_SUCCESS)
+        {
+            platform_printf("failed to init tls session, rc = %d\n", rc);
+        }
+    }
+
 	return rc;
 }
 
@@ -177,6 +190,7 @@ void NetworkDisconnect(Network* n)
         return;
     }
 
+    if (n->tls_enabled) tls_close(&n->tls_handle);
     shutdown(n->socket, SHUT_RDWR);
 	close(n->socket);
 }
@@ -200,7 +214,11 @@ int NetworkRead(Network* n, unsigned char* buffer, int len, int timeout_ms)
 	int bytes = 0;
 	while (bytes < len)
 	{
-		rc = recv(n->socket, &buffer[bytes], (size_t)(len - bytes), 0);
+        if (!n->tls_enabled)
+            rc = recv(n->socket, &buffer[bytes], (size_t)(len - bytes), 0);
+        else
+            rc = tls_recv(n->tls_handle, &buffer[bytes], (size_t)(len - bytes));
+
         if (rc == 0)
         {
             bytes = 0;
@@ -230,10 +248,15 @@ int NetworkWrite(Network* n, unsigned char* buffer, int length, int timeout_ms)
         return -1;
     }
 
+    int rc;
 	setsockopt(n->socket, SOL_SOCKET, SO_SNDTIMEO, (void*)&timeout_ms, sizeof timeout_ms);
-	int rc = send(n->socket, buffer, length, 0);
 
-    platform_printf("%s: tcp send rc = %d\n", __func__, rc);
+    if (!n->tls_enabled)
+        rc = send(n->socket, buffer, length, 0);
+    else
+        rc = tls_send(n->tls_handle, buffer, length);
+
+    //platform_printf("%s: tcp send rc = %d\n", __func__, rc);
 
 	return rc;
 }

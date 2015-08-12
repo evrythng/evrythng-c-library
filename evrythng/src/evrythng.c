@@ -335,7 +335,7 @@ evrythng_return_t evrythng_connect(evrythng_handle_t handle)
         return evrythng_connect_internal(handle);
 
     if (handle->secure_connection)
-        NetworkSecuredInit(&handle->mqtt_network, handle->ca_buf, sizeof handle->ca_buf);
+        NetworkSecuredInit(&handle->mqtt_network, handle->ca_buf, handle->ca_size);
     else
         NetworkInit(&handle->mqtt_network);
 
