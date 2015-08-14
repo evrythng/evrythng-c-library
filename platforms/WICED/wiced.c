@@ -368,6 +368,12 @@ void* platform_malloc(size_t bytes)
 }
 
 
+void* platform_realloc(void* ptr, size_t bytes)
+{
+    return realloc(ptr, bytes);
+}
+
+
 void platform_free(void* memory)
 {
     free(memory);

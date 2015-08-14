@@ -102,7 +102,6 @@ void evrythng_destroy_handle(evrythng_handle_t handle)
     if (handle->initialized && MQTTisConnected(&handle->mqtt_client)) evrythng_disconnect(handle);
     if (handle->host) platform_free(handle->host);
     if (handle->key) platform_free(handle->key);
-    //if (handle->ca_buf) platform_free(handle->ca_buf);
     if (handle->client_id) platform_free(handle->client_id);
 
     sub_callback_t **_sub_callback = &handle->sub_callbacks;
@@ -369,23 +368,32 @@ evrythng_return_t evrythng_connect_internal(evrythng_handle_t handle)
         return EVRYTHNG_SUCCESS;
     }
 
-    debug("connecting to host: %s, port: %d", handle->host, handle->port);
-
-	if (NetworkConnect(&handle->mqtt_network, handle->host, handle->port))
+    int attempts = 3;
+    for (; attempts > 0; attempts--)
     {
-        error("Failed to establish network connection");
-        return EVRYTHNG_CONNECTION_FAILED;
+        debug("connecting to host: %s, port: %d, attempt: %d", handle->host, handle->port, attempts);
+        if (NetworkConnect(&handle->mqtt_network, handle->host, handle->port))
+        {
+            error("Failed to establish network connection");
+            NetworkDisconnect(&handle->mqtt_network);
+            continue;
+        }
+        debug("network connection established");
+
+        if ((rc = MQTTConnect(&handle->mqtt_client, &handle->mqtt_conn_opts)) != MQTT_SUCCESS)
+        {
+            error("Failed to connect, return code %d", rc);
+            NetworkDisconnect(&handle->mqtt_network);
+            continue;
+        }
+        debug("MQTT connected");
+        break;
     }
 
-    debug("network connection established");
-
-    if ((rc = MQTTConnect(&handle->mqtt_client, &handle->mqtt_conn_opts)) != MQTT_SUCCESS)
+    if (!MQTTisConnected(&handle->mqtt_client))
     {
-        error("Failed to connect, return code %d", rc);
-        NetworkDisconnect(&handle->mqtt_network);
         return EVRYTHNG_CONNECTION_FAILED;
     }
-    debug("MQTT connected");
 
     sub_callback_t **_sub_callbacks = &handle->sub_callbacks;
     while (*_sub_callbacks) 

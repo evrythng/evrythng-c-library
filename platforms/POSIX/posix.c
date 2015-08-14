@@ -167,6 +167,12 @@ int NetworkConnect(Network* n, char* addr, int port)
 }
 
 
+void NetworkSecuredInit(Network* n, const char* ca_buf, size_t ca_size)
+{
+    //TODO
+}
+
+
 void NetworkDisconnect(Network* n)
 {
 	close(n->my_socket);
@@ -311,6 +317,12 @@ void* platform_malloc(size_t bytes)
 }
 
 
+void* platform_realloc(void* ptr, size_t bytes)
+{
+    return realloc(ptr, bytes);
+}
+
+
 void platform_free(void* memory)
 {
     free(memory);
@@ -334,3 +346,7 @@ int platform_printf(const char* fmt, ...)
 }
 
 
+void platform_sleep(int ms)
+{
+    usleep(ms * 1000);
+}

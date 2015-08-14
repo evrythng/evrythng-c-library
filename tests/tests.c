@@ -91,7 +91,7 @@ void log_callback(evrythng_log_level_t level, const char* fmt, va_list vl)
     start_processing_thread(h1);
 
 #define END_SINGLE_CONNECTION \
-    CuAssertIntEquals(tc, 0, SemaphoreWait(&sub_sem, 10000));\
+    CuAssertIntEquals(tc, 0, SemaphoreWait(&sub_sem, 5000));\
     stop_processing_thread(h1);\
     evrythng_disconnect(h1);\
     evrythng_destroy_handle(h1);\
@@ -107,7 +107,7 @@ void log_callback(evrythng_log_level_t level, const char* fmt, va_list vl)
 
 #define END_SINGLE_CONNECTION \
     Timer t; TimerInit(&t);\
-    TimerCountdownMS(&t, 10000);\
+    TimerCountdownMS(&t, 5000);\
     int rc = 0;\
     do \
     {\
@@ -120,6 +120,7 @@ void log_callback(evrythng_log_level_t level, const char* fmt, va_list vl)
     CuAssertIntEquals(tc, 0, rc);\
     evrythng_disconnect(h1);\
     evrythng_destroy_handle(h1);\
+    TimerDeinit(&t);\
     PRINT_END_MEM_STATS
 
 #endif
@@ -252,7 +253,6 @@ void test_tcp_connect_ok2(CuTest* tc)
     evrythng_handle_t h1;
     common_tcp_init_handle(&h1);
     CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, evrythng_connect(h1));
-
     CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, evrythng_disconnect(h1));
     evrythng_destroy_handle(h1);
     PRINT_END_MEM_STATS
@@ -271,8 +271,8 @@ void test_subunsub_thng(CuTest* tc)
     PRINT_START_MEM_STATS 
     evrythng_handle_t h1;
     common_tcp_init_handle(&h1);
-    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, evrythng_connect(h1));
 
+    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, evrythng_connect(h1));
     CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, evrythng_subscribe_thng_action(h1, THNG_1, ACTION_1, test_sub_callback));
     CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, evrythng_subscribe_thng_action(h1, THNG_1, ACTION_2, test_sub_callback));
     CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, evrythng_unsubscribe_thng_action(h1, THNG_1, ACTION_2));
@@ -287,8 +287,8 @@ void test_subunsub_thng(CuTest* tc)
     CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, evrythng_unsubscribe_thng_actions(h1, THNG_1));
     CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, evrythng_subscribe_thng_location(h1, THNG_1, test_sub_callback));
     CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, evrythng_unsubscribe_thng_location(h1, THNG_1));
-
     CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, evrythng_disconnect(h1));
+
     evrythng_destroy_handle(h1);
     PRINT_END_MEM_STATS
 }
@@ -425,15 +425,15 @@ CuSuite* CuGetSuite(void)
 	SUITE_ADD_TEST(suite, test_set_callback_ok);
 	SUITE_ADD_TEST(suite, test_set_callback_fail);
 	SUITE_ADD_TEST(suite, test_tcp_connect_ok1);
-	SUITE_ADD_TEST(suite, test_tcp_connect_ok2);
+    SUITE_ADD_TEST(suite, test_tcp_connect_ok2);
 
 	SUITE_ADD_TEST(suite, test_subunsub_thng);
 	SUITE_ADD_TEST(suite, test_subunsub_prod);
 #endif
 
+#if 1
 	SUITE_ADD_TEST(suite, test_pubsub_thng_prop);
 	SUITE_ADD_TEST(suite, test_pubsuball_thng_prop);
-#if 1
 
 	SUITE_ADD_TEST(suite, test_pubsub_thng_action);
 	SUITE_ADD_TEST(suite, test_pubsuball_thng_actions);

@@ -325,8 +325,6 @@ int MQTTYield(MQTTClient* c, int timeout_ms)
 {
     int rc = MQTT_SUCCESS;
     Timer timer;
-
-
     TimerInit(&timer);
     TimerCountdownMS(&timer, timeout_ms);
 

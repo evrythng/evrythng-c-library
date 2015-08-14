@@ -136,7 +136,6 @@ int main(int argc, char *argv[])
     evrythng_set_conlost_callback(opts.evt_handle, conlost_callback);
     evrythng_set_url(opts.evt_handle, opts.url);
     evrythng_set_key(opts.evt_handle, opts.key);
-    evrythng_set_certificate(opts.evt_handle, opts.cafile, opts.cafile ? strlen(opts.cafile) : 0);
 
     log("Connecting to %s", opts.url);
     while(evrythng_connect(opts.evt_handle) != EVRYTHNG_SUCCESS) {
@@ -150,7 +149,7 @@ int main(int argc, char *argv[])
         log("Subscribing to property %s", opts.prop);
         evrythng_subscribe_thng_property(opts.evt_handle, opts.thng, opts.prop, print_property_callback);
 
-        evrythng_message_loop(opts.evt_handle);
+        evrythng_message_cycle(opts.evt_handle, 200);
     } 
     else 
     {
@@ -160,7 +159,7 @@ int main(int argc, char *argv[])
             char msg[128];
             sprintf(msg, "[{\"value\": %d}]", value);
             log("Publishing value %d to property %s", value, opts.prop);
-            evrythng_publish_thng_property(opts.evt_handle, opts.thng, opts.prop, msg, NULL);
+            evrythng_publish_thng_property(opts.evt_handle, opts.thng, opts.prop, msg);
             sleep(1);
         }
     }

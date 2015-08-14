@@ -63,8 +63,10 @@ int TimerLeftMS(Timer* t)
         return 0;
     }
 
-	xTaskCheckForTimeOut(&t->xTimeOut, &t->xTicksToWait); /* updates xTicksToWait to the number left */
-	return (t->xTicksToWait < 0) ? 0 : (os_ticks_to_msec(t->xTicksToWait));
+    /* if true -> timeout, else updates xTicksToWait to the number left */
+	if (xTaskCheckForTimeOut(&t->xTimeOut, &t->xTicksToWait) == pdTRUE)
+        return 0;
+	return (t->xTicksToWait <= 0) ? 0 : (os_ticks_to_msec(t->xTicksToWait));
 }
 
 
@@ -225,7 +227,7 @@ int NetworkRead(Network* n, unsigned char* buffer, int len, int timeout_ms)
             break;
         }
         else if (rc == -1)
-		{
+		{   
 			if (errno != ENOTCONN && errno != ECONNRESET)
 			{
 				bytes = -1;
@@ -235,6 +237,8 @@ int NetworkRead(Network* n, unsigned char* buffer, int len, int timeout_ms)
 		else
 			bytes += rc;
 	}
+
+    //platform_printf("%s: recv %d bytes\n", __func__, bytes);
 
 	return bytes;
 }
@@ -256,7 +260,7 @@ int NetworkWrite(Network* n, unsigned char* buffer, int length, int timeout_ms)
     else
         rc = tls_send(n->tls_handle, buffer, length);
 
-    //platform_printf("%s: tcp send rc = %d\n", __func__, rc);
+    //platform_printf("%s: send rc = %d\n", __func__, rc);
 
 	return rc;
 }
@@ -463,6 +467,12 @@ int ThreadDestroy(Thread* t)
 void* platform_malloc(size_t bytes)
 {   
     return os_mem_alloc(bytes);
+}
+
+
+void* platform_realloc(void* ptr, size_t bytes)
+{
+    return os_mem_realloc(ptr, bytes);
 }
 
 
