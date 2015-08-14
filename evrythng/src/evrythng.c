@@ -368,10 +368,10 @@ evrythng_return_t evrythng_connect_internal(evrythng_handle_t handle)
         return EVRYTHNG_SUCCESS;
     }
 
-    int attempts = 3;
-    for (; attempts > 0; attempts--)
+    int attempt;
+    for (attempt = 1; attempt <= 3; attempt++)
     {
-        debug("connecting to host: %s, port: %d, attempt: %d", handle->host, handle->port, attempts);
+        debug("connecting to host: %s, port: %d, attempt: %d", handle->host, handle->port, attempt);
         if (NetworkConnect(&handle->mqtt_network, handle->host, handle->port))
         {
             error("Failed to establish network connection");
