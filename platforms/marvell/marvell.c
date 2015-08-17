@@ -171,6 +171,12 @@ int NetworkConnect(Network* n, char* hostname, int port)
 			rc = connect(n->socket, (struct sockaddr*)&address, sizeof(address));
 	}
 
+    if (rc != 0)
+    {
+        platform_printf("failed to connect to socket, rc = %d, errno = %d\n", rc, errno);
+        return rc;
+    }
+
     if (n->tls_enabled)
     {
         rc = tls_session_init(&n->tls_handle, n->socket, &n->tls_config);
@@ -238,7 +244,7 @@ int NetworkRead(Network* n, unsigned char* buffer, int len, int timeout_ms)
 			bytes += rc;
 	}
 
-    //platform_printf("%s: recv %d bytes\n", __func__, bytes);
+    platform_printf("%s: recv %d bytes\n", __func__, bytes);
 
 	return bytes;
 }
@@ -260,7 +266,7 @@ int NetworkWrite(Network* n, unsigned char* buffer, int length, int timeout_ms)
     else
         rc = tls_send(n->tls_handle, buffer, length);
 
-    //platform_printf("%s: send rc = %d\n", __func__, rc);
+    platform_printf("%s: send rc = %d\n", __func__, rc);
 
 	return rc;
 }
