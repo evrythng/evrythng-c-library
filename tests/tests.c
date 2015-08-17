@@ -19,41 +19,12 @@ void vApplicationIdleHook(void)
 }
 #endif
 
-static int stop_cycling;
 static Semaphore sub_sem;
-static Thread t;
-
-
-void evrythng_process(void* arg)
-{
-    platform_printf("%s STARTED\n", __func__);
-    while (!stop_cycling)
-    {
-        evrythng_message_cycle((evrythng_handle_t)arg, 200);
-        platform_sleep(100);
-    }
-    platform_printf("%s STOPPED\n", __func__);
-}
-
-
-void start_processing_thread(evrythng_handle_t handle)
-{
-    stop_cycling = 0;
-    ThreadCreate(&t, 0, "mqtt_loop", evrythng_process, 8192, handle);
-}
 
 
 void conlost_callback(evrythng_handle_t handle)
 {
-    stop_cycling = 1;
-}
-
-
-void stop_processing_thread(evrythng_handle_t handle)
-{
-    stop_cycling = 1;
-    ThreadJoin(&t, 10000);
-    ThreadDestroy(&t);
+    platform_printf("%s connection lost\n", __func__);
 }
 
 
@@ -81,49 +52,18 @@ void log_callback(evrythng_log_level_t level, const char* fmt, va_list vl)
     platform_printf("%s\n", msg);
 }
 
-#if 0
-
 #define START_SINGLE_CONNECTION \
     PRINT_START_MEM_STATS \
     evrythng_handle_t h1;\
     common_tcp_init_handle(&h1);\
     CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, evrythng_connect(h1));\
-    start_processing_thread(h1);
+    evrythng_start(h1);
 
 #define END_SINGLE_CONNECTION \
     CuAssertIntEquals(tc, 0, SemaphoreWait(&sub_sem, 5000));\
-    stop_processing_thread(h1);\
     evrythng_disconnect(h1);\
     evrythng_destroy_handle(h1);\
     PRINT_END_MEM_STATS
-
-#else
-
-#define START_SINGLE_CONNECTION \
-    PRINT_START_MEM_STATS \
-    evrythng_handle_t h1;\
-    common_tcp_init_handle(&h1);\
-    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, evrythng_connect(h1));\
-
-#define END_SINGLE_CONNECTION \
-    Timer t; TimerInit(&t);\
-    TimerCountdownMS(&t, 5000);\
-    int rc = 0;\
-    do \
-    {\
-        evrythng_message_cycle(h1, 200);\
-        platform_sleep(100);\
-        rc = SemaphoreWait(&sub_sem, 0);\
-        if (rc == 0)\
-            break;\
-    } while (TimerLeftMS(&t) > 0);\
-    CuAssertIntEquals(tc, 0, rc);\
-    evrythng_disconnect(h1);\
-    evrythng_destroy_handle(h1);\
-    TimerDeinit(&t);\
-    PRINT_END_MEM_STATS
-
-#endif
 
 
 #if defined(CONFIG_OS_FREERTOS) && !defined(FREERTOS_SIMULATOR)
@@ -273,6 +213,8 @@ void test_subunsub_thng(CuTest* tc)
     common_tcp_init_handle(&h1);
 
     CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, evrythng_connect(h1));
+    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, evrythng_start(h1));
+
     CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, evrythng_subscribe_thng_action(h1, THNG_1, ACTION_1, test_sub_callback));
     CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, evrythng_subscribe_thng_action(h1, THNG_1, ACTION_2, test_sub_callback));
     CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, evrythng_unsubscribe_thng_action(h1, THNG_1, ACTION_2));
@@ -287,8 +229,8 @@ void test_subunsub_thng(CuTest* tc)
     CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, evrythng_unsubscribe_thng_actions(h1, THNG_1));
     CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, evrythng_subscribe_thng_location(h1, THNG_1, test_sub_callback));
     CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, evrythng_unsubscribe_thng_location(h1, THNG_1));
-    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, evrythng_disconnect(h1));
 
+    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, evrythng_disconnect(h1));
     evrythng_destroy_handle(h1);
     PRINT_END_MEM_STATS
 }
@@ -299,6 +241,7 @@ void test_subunsub_prod(CuTest* tc)
     evrythng_handle_t h1;
     common_tcp_init_handle(&h1);
     CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, evrythng_connect(h1));
+    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, evrythng_start(h1));
 
     CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, evrythng_subscribe_product_property(h1, PRODUCT_1, PROPERTY_1, test_sub_callback));
     CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, evrythng_subscribe_product_property(h1, PRODUCT_1, PROPERTY_2, test_sub_callback));

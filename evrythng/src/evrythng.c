@@ -21,6 +21,16 @@ typedef struct sub_callback_t {
 } sub_callback_t;
 
 
+enum { MQTT_CONNECT, MQTT_DISCONNECT, MQTT_PUBLISH, MQTT_SUBSCRIBE, MQTT_UNSUBSCRIBE };
+typedef struct mqtt_op 
+{
+    int op;
+    const char* topic;
+    MQTTMessage* message;
+    evrythng_return_t result;
+} mqtt_op;
+
+
 struct evrythng_ctx_t {
     char*   host;
     int     port;
@@ -31,6 +41,10 @@ struct evrythng_ctx_t {
     int     secure_connection;
     int     qos;
     int     initialized;
+    int     command_timeout_ms;
+
+    Thread  mqtt_thread;
+    int     mqtt_thread_stop;
 
     unsigned char serialize_buffer[1024];
     unsigned char read_buffer[1024];
@@ -43,6 +57,11 @@ struct evrythng_ctx_t {
     MQTTPacket_connectData  mqtt_conn_opts;
 
     sub_callback_t *sub_callbacks;
+
+    mqtt_op     next_op;
+    Mutex       next_op_mtx;
+    Semaphore   next_op_ready_sem;
+    Semaphore   next_op_result_sem;
 };
 
 
@@ -85,12 +104,20 @@ evrythng_return_t evrythng_init_handle(evrythng_handle_t* handle)
     (*handle)->ca_buf = cert_buffer;
     (*handle)->ca_size = sizeof cert_buffer;
 
+    (*handle)->command_timeout_ms = 5000;
+
 	MQTTClientInit(
             &(*handle)->mqtt_client, 
             &(*handle)->mqtt_network, 
-            5000, 
+            (*handle)->command_timeout_ms, 
             (*handle)->serialize_buffer, sizeof((*handle)->serialize_buffer), 
             (*handle)->read_buffer, sizeof((*handle)->read_buffer));
+
+    (*handle)->mqtt_thread_stop = 0;
+
+    MutexInit(&(*handle)->next_op_mtx);
+    SemaphoreInit(&(*handle)->next_op_ready_sem);
+    SemaphoreInit(&(*handle)->next_op_result_sem);
 
     return EVRYTHNG_SUCCESS;
 }
@@ -100,12 +127,17 @@ void evrythng_destroy_handle(evrythng_handle_t handle)
 {
     if (!handle) return;
     if (handle->initialized && MQTTisConnected(&handle->mqtt_client)) evrythng_disconnect(handle);
+
+    handle->mqtt_thread_stop = 1;
+    ThreadJoin(&handle->mqtt_thread, 0x00FFFFFF);
+    ThreadDestroy(&handle->mqtt_thread);
+
     if (handle->host) platform_free(handle->host);
     if (handle->key) platform_free(handle->key);
     if (handle->client_id) platform_free(handle->client_id);
 
     sub_callback_t **_sub_callback = &handle->sub_callbacks;
-    while(*_sub_callback) 
+    while (*_sub_callback) 
     {
         sub_callback_t* _sub_callback_tmp = *_sub_callback;
         _sub_callback = &(*_sub_callback)->next;
@@ -114,6 +146,10 @@ void evrythng_destroy_handle(evrythng_handle_t handle)
     }
 
     MQTTClientDeinit(&handle->mqtt_client);
+
+    MutexDeinit(&handle->next_op_mtx);
+    SemaphoreDeinit(&handle->next_op_ready_sem);
+    SemaphoreDeinit(&handle->next_op_result_sem);
 
     platform_free(handle);
 }
@@ -325,6 +361,115 @@ void evrythng_message_cycle(evrythng_handle_t handle, int timeout_ms)
 }
 
 
+static evrythng_return_t evrythng_async_op(evrythng_handle_t handle, int op, const char* topic, MQTTMessage* message)
+{
+    evrythng_return_t rc;
+
+    if (!handle || !topic)
+        return EVRYTHNG_BAD_ARGS;
+
+    MutexLock(&handle->next_op_mtx);
+
+    handle->next_op.op = op;
+    handle->next_op.topic = topic;
+    handle->next_op.message = message;
+
+    SemaphorePost(&handle->next_op_ready_sem);
+
+    if (SemaphoreWait(&handle->next_op_result_sem, handle->command_timeout_ms * 2))
+    {
+        rc = EVRYTHNG_TIMEOUT;
+    }
+    else
+    {
+        rc = handle->next_op.result;
+    }
+
+    MutexUnlock(&handle->next_op_mtx);
+
+    return rc;
+}
+
+
+static void mqtt_thread(void* arg)
+{
+    int rc;
+    evrythng_handle_t handle = (evrythng_handle_t)arg;
+
+    while (!handle->mqtt_thread_stop)
+    {
+        if (SemaphoreWait(&handle->next_op_ready_sem, 0))
+        {
+            evrythng_message_cycle(handle, 400);
+            platform_sleep(100);
+            continue;
+        }
+
+        switch (handle->next_op.op)
+        {
+            case MQTT_PUBLISH:
+                rc = MQTTPublish(&handle->mqtt_client, 
+                        handle->next_op.topic,
+                        handle->next_op.message);
+                if (rc == MQTT_SUCCESS) 
+                {
+                    debug("published message: %s", handle->next_op.message->payload);
+                    handle->next_op.result = EVRYTHNG_SUCCESS;
+                }
+                else 
+                {
+                    error("could not publish message, rc = %d", rc);
+                    handle->next_op.result = EVRYTHNG_PUBLISH_ERROR;
+                }
+                break;
+
+            case MQTT_SUBSCRIBE:
+                rc = MQTTSubscribe(&handle->mqtt_client, 
+                        handle->next_op.topic, 
+                        handle->qos, 
+                        message_callback, 
+                        handle);
+                if (rc >= 0) 
+                {
+                    debug("successfully subscribed to %s", handle->next_op.topic);
+                    handle->next_op.result = EVRYTHNG_SUCCESS;
+                }
+                else
+                    handle->next_op.result = EVRYTHNG_SUBSCRIPTION_ERROR;
+                break;
+
+            case MQTT_UNSUBSCRIBE:
+                rc = MQTTUnsubscribe(&handle->mqtt_client, handle->next_op.topic);
+                if (rc >= 0) 
+                {
+                    debug("successfully unsubscribed from %s", handle->next_op.topic);
+                    handle->next_op.result = EVRYTHNG_SUCCESS;
+                }
+                else
+                    handle->next_op.result = EVRYTHNG_UNSUBSCRIPTION_ERROR;
+                break;
+
+            default:
+                handle->next_op.result = EVRYTHNG_BAD_ARGS;
+                break;
+        }
+
+        SemaphorePost(&handle->next_op_result_sem);
+    }
+}
+
+
+evrythng_return_t evrythng_start(evrythng_handle_t handle)
+{
+    if (!handle)
+        return EVRYTHNG_BAD_ARGS;
+    
+    ThreadCreate(&handle->mqtt_thread, 0, "mqtt_thread", mqtt_thread, 8192, (void*)handle);
+
+    return EVRYTHNG_SUCCESS;
+}
+
+
 evrythng_return_t evrythng_connect(evrythng_handle_t handle)
 {
     if (!handle)
@@ -517,18 +662,7 @@ static evrythng_return_t evrythng_publish(
         .payloadlen = strlen(property_json)
     };
 
-    rc = MQTTPublish(&handle->mqtt_client, pub_topic, &msg);
-    if (rc == MQTT_SUCCESS) 
-    {
-        debug("published message: %s", property_json);
-    }
-    else 
-    {
-        error("could not publish message, rc = %d", rc);
-        return EVRYTHNG_PUBLISH_ERROR;
-    }
-
-    return EVRYTHNG_SUCCESS;
+    return evrythng_async_op(handle, MQTT_PUBLISH, pub_topic, &msg);
 }
 
 
@@ -586,18 +720,12 @@ static evrythng_return_t evrythng_subscribe(
 
     debug("subscribing to topic: %s", sub_topic);
 
-    rc = MQTTSubscribe(&handle->mqtt_client, new_callback->topic, handle->qos, message_callback, handle);
-    if (rc >= 0) 
+    evrythng_return_t ret = evrythng_async_op(handle, MQTT_SUBSCRIBE, new_callback->topic, 0);
+    if (ret != EVRYTHNG_SUCCESS) 
     {
-        debug("successfully subscribed to %s", sub_topic);
-    }
-    else 
-    {
-        debug("subscription failed, rc=%d", rc);
-
+        debug("subscription failed, ret = %d", ret);
         rm_sub_callback(handle, sub_topic);
-
-        return EVRYTHNG_SUBSCRIPTION_ERROR;
+        return ret;
     }
 
     return EVRYTHNG_SUCCESS;
@@ -650,18 +778,7 @@ static evrythng_return_t evrythng_unsubscribe(
 
     rm_sub_callback(handle, unsub_topic);
 
-    rc = MQTTUnsubscribe(&handle->mqtt_client, unsub_topic);
-    if (rc >= 0) 
-    {
-        debug("unsubscribed from %s", unsub_topic);
-    }
-    else 
-    {
-        error("unsubscription failed, rc=%d", rc);
-        return EVRYTHNG_UNSUBSCRIPTION_ERROR;
-    }
-
-    return EVRYTHNG_SUCCESS;
+    return evrythng_async_op(handle, MQTT_UNSUBSCRIBE, unsub_topic, 0);
 }
 
 

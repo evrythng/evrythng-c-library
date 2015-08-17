@@ -97,6 +97,9 @@ int NetworkRead(Network* n, unsigned char* buffer, int len, int timeout_ms)
 		else
 			bytes += rc;
 	}
+
+    //platform_printf("%s recv bytes = %d\n", __func__, bytes);
+
 	return bytes;
 }
 
@@ -110,6 +113,9 @@ int NetworkWrite(Network* n, unsigned char* buffer, int len, int timeout_ms)
 
 	setsockopt(n->my_socket, SOL_SOCKET, SO_SNDTIMEO, (char *)&tv,sizeof(struct timeval));
 	int	rc = write(n->my_socket, buffer, len);
+
+    //platform_printf("%s send bytes = %d\n", __func__, rc);
+
 	return rc;
 }
 
@@ -260,8 +266,13 @@ int SemaphoreWait(Semaphore* s, int timeout_ms)
     
     struct timespec ts;
     clock_gettime(CLOCK_REALTIME, &ts);
-    ts.tv_sec += (timeout_ms / 1000);
-    ts.tv_nsec += ((timeout_ms - (timeout_ms % 1000) * 1000) * 1000);
+
+    int sec = timeout_ms / 1000;
+    timeout_ms = timeout_ms - sec * 1000;
+
+    ts.tv_nsec += timeout_ms * 1000000;
+    ts.tv_sec += ts.tv_nsec / 1000000000 + sec;
+    ts.tv_nsec = ts.tv_nsec % 1000000000;
 
     do 
     {

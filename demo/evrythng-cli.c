@@ -137,19 +137,19 @@ int main(int argc, char *argv[])
     evrythng_set_url(opts.evt_handle, opts.url);
     evrythng_set_key(opts.evt_handle, opts.key);
 
-    log("Connecting to %s", opts.url);
-    while(evrythng_connect(opts.evt_handle) != EVRYTHNG_SUCCESS) {
+    while (evrythng_connect(opts.evt_handle) != EVRYTHNG_SUCCESS)
+    {
         log("Retrying");
-        sleep(2);
+        platform_sleep(3000);
     }
-    log("Evrythng client Connected");
+
+    evrythng_start(opts.evt_handle);
 
     if (opts.sub) 
     {
-        log("Subscribing to property %s", opts.prop);
         evrythng_subscribe_thng_property(opts.evt_handle, opts.thng, opts.prop, print_property_callback);
-
-        evrythng_message_cycle(opts.evt_handle, 200);
+        while(1) platform_sleep(1000);
+ 
     } 
     else 
     {
@@ -160,7 +160,7 @@ int main(int argc, char *argv[])
             sprintf(msg, "[{\"value\": %d}]", value);
             log("Publishing value %d to property %s", value, opts.prop);
             evrythng_publish_thng_property(opts.evt_handle, opts.thng, opts.prop, msg);
-            sleep(1);
+            platform_sleep(2000);
         }
     }
 

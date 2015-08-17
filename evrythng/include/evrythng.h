@@ -27,6 +27,7 @@
 
 typedef enum _evrythng_return_t 
 {
+    EVRYTHNG_TIMEOUT             = -11,
     EVRYTHNG_UNSUBSCRIPTION_ERROR= -10,
     EVRYTHNG_SUBSCRIPTION_ERROR  = -9,
     EVRYTHNG_PUBLISH_ERROR       = -8,
@@ -202,6 +203,9 @@ evrythng_return_t evrythng_set_conlost_callback(evrythng_handle_t handle, connec
  *            \b EVRYTHNG_SUCCESS      on success \n
  */
 evrythng_return_t evrythng_connect(evrythng_handle_t handle);
+
+//TODO
+evrythng_return_t evrythng_start(evrythng_handle_t handle);
 
 
 /** @brief Disconnect from Evrythng cloud.
