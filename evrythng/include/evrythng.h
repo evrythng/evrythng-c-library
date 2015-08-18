@@ -188,6 +188,34 @@ evrythng_return_t evrythng_set_log_callback(evrythng_handle_t handle, evrythng_l
 evrythng_return_t evrythng_set_conlost_callback(evrythng_handle_t handle, connection_lost_callback callback);
 
 
+/** @brief Set internal thread priority.
+ *
+ * Use this function to set internal thread priority.
+ * If it was not setup a default value of 0 will be used.
+ *
+ * @param[in] handle A pointer to context handle.
+ * @param[in] priority A priority value.
+ *
+ * @return    \b EVRYTHNG_BAD_ARGS     if handle is a null pointer or priority is < 0 \n
+ *            \b EVRYTHNG_SUCCESS      on success \n
+ */
+evrythng_return_t evrythng_set_thread_priority(evrythng_handle_t handle, int priority);
+
+
+/** @brief Set internal thread stack size.
+ *
+ * Use this function to set internal thread stack size.
+ * If it was not setup a default value of 4096 will be used.
+ *
+ * @param[in] handle A pointer to context handle.
+ * @param[in] stacksize A stack size value.
+ *
+ * @return    \b EVRYTHNG_BAD_ARGS     if handle is a null pointer or stack size is < 1024 \n
+ *            \b EVRYTHNG_SUCCESS      on success \n
+ */
+evrythng_return_t evrythng_set_thread_stacksize(evrythng_handle_t handle, int stacksize);
+
+
 /** @brief Connect to Evrythng cloud.
  *
  * Use this function to connect to the Evrythng cloud.
@@ -204,9 +232,6 @@ evrythng_return_t evrythng_set_conlost_callback(evrythng_handle_t handle, connec
  */
 evrythng_return_t evrythng_connect(evrythng_handle_t handle);
 
-//TODO
-evrythng_return_t evrythng_start(evrythng_handle_t handle);
-
 
 /** @brief Disconnect from Evrythng cloud.
  *
@@ -220,10 +245,6 @@ evrythng_return_t evrythng_start(evrythng_handle_t handle);
  *            \b EVRYTHNG_SUCCESS      on success \n
  */
 evrythng_return_t evrythng_disconnect(evrythng_handle_t handle);
-
-
-//TODO
-void evrythng_message_cycle(evrythng_handle_t handle, int timeout_ms);
 
 
 /** @brief Publish a single property to a given thing.

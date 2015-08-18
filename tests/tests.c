@@ -56,8 +56,7 @@ void log_callback(evrythng_log_level_t level, const char* fmt, va_list vl)
     PRINT_START_MEM_STATS \
     evrythng_handle_t h1;\
     common_tcp_init_handle(&h1);\
-    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, evrythng_connect(h1));\
-    evrythng_start(h1);
+    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, evrythng_connect(h1));
 
 #define END_SINGLE_CONNECTION \
     CuAssertIntEquals(tc, 0, SemaphoreWait(&sub_sem, 5000));\
@@ -213,7 +212,6 @@ void test_subunsub_thng(CuTest* tc)
     common_tcp_init_handle(&h1);
 
     CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, evrythng_connect(h1));
-    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, evrythng_start(h1));
 
     CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, evrythng_subscribe_thng_action(h1, THNG_1, ACTION_1, test_sub_callback));
     CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, evrythng_subscribe_thng_action(h1, THNG_1, ACTION_2, test_sub_callback));
@@ -241,7 +239,6 @@ void test_subunsub_prod(CuTest* tc)
     evrythng_handle_t h1;
     common_tcp_init_handle(&h1);
     CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, evrythng_connect(h1));
-    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, evrythng_start(h1));
 
     CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, evrythng_subscribe_product_property(h1, PRODUCT_1, PROPERTY_1, test_sub_callback));
     CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, evrythng_subscribe_product_property(h1, PRODUCT_1, PROPERTY_2, test_sub_callback));

@@ -332,12 +332,8 @@ int MQTTYield(MQTTClient* c, int timeout_ms)
     {
         MutexLock(&c->mutex);
 
-        if (!c->isconnected)
-        {
-            MutexUnlock(&c->mutex);
-            return MQTT_CONNECTION_LOST;
-        }
         rc = cycle(c, &timer);
+
         MutexUnlock(&c->mutex);
 
         if (rc != MQTT_SUCCESS)

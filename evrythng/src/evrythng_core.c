@@ -10,8 +10,9 @@
 #define TOPIC_MAX_LEN 128
 #define USERNAME "authorization"
 
+static void mqtt_thread(void* arg);
 static evrythng_return_t evrythng_connect_internal(evrythng_handle_t handle);
-
+static evrythng_return_t evrythng_disconnect_internal(evrythng_handle_t handle);
 
 typedef struct sub_callback_t {
     char*                   topic;
@@ -45,6 +46,8 @@ struct evrythng_ctx_t {
 
     Thread  mqtt_thread;
     int     mqtt_thread_stop;
+    int     mqtt_thread_priority;
+    int     mqtt_thread_stacksize;
 
     unsigned char serialize_buffer[1024];
     unsigned char read_buffer[1024];
@@ -114,6 +117,8 @@ evrythng_return_t evrythng_init_handle(evrythng_handle_t* handle)
             (*handle)->read_buffer, sizeof((*handle)->read_buffer));
 
     (*handle)->mqtt_thread_stop = 0;
+    (*handle)->mqtt_thread_priority = 0;
+    (*handle)->mqtt_thread_stacksize = 4096;
 
     MutexInit(&(*handle)->next_op_mtx);
     SemaphoreInit(&(*handle)->next_op_ready_sem);
@@ -262,6 +267,28 @@ evrythng_return_t evrythng_set_qos(evrythng_handle_t handle, int qos)
 }
 
 
+evrythng_return_t evrythng_set_thread_priority(evrythng_handle_t handle, int priority)
+{
+    if (!handle || priority < 0)
+        return EVRYTHNG_BAD_ARGS;
+
+    handle->mqtt_thread_priority = priority;
+
+    return EVRYTHNG_SUCCESS;
+}
+
+
+evrythng_return_t evrythng_set_thread_stacksize(evrythng_handle_t handle, int stacksize)
+{
+    if (!handle || stacksize < 1024)
+        return EVRYTHNG_BAD_ARGS;
+
+    handle->mqtt_thread_stacksize = stacksize;
+
+    return EVRYTHNG_SUCCESS;
+}
+
+
 static sub_callback_t* add_sub_callback(evrythng_handle_t handle, char* topic, int qos, sub_callback *callback)
 {
     sub_callback_t **_sub_callbacks = &handle->sub_callbacks;
@@ -323,7 +350,7 @@ static void rm_sub_callback(evrythng_handle_t handle, const char* topic)
 
 
 
-void message_callback(MessageData* data, void* userdata)
+static void message_callback(MessageData* data, void* userdata)
 {
     evrythng_handle_t handle = (evrythng_handle_t)userdata;
 
@@ -348,24 +375,11 @@ void message_callback(MessageData* data, void* userdata)
 }
 
 
-void evrythng_message_cycle(evrythng_handle_t handle, int timeout_ms)
-{
-    int rc = MQTTYield(&handle->mqtt_client, timeout_ms);
-    if (rc == MQTT_CONNECTION_LOST)
-    {
-        warning("mqtt server connection lost");
-        evrythng_disconnect(handle);
-        if (handle->conlost_callback)
-            (*handle->conlost_callback)(handle);
-    }
-}
-
-
 static evrythng_return_t evrythng_async_op(evrythng_handle_t handle, int op, const char* topic, MQTTMessage* message)
 {
     evrythng_return_t rc;
 
-    if (!handle || !topic)
+    if (!handle)
         return EVRYTHNG_BAD_ARGS;
 
     MutexLock(&handle->next_op_mtx);
@@ -391,114 +405,39 @@ static evrythng_return_t evrythng_async_op(evrythng_handle_t handle, int op, con
 }
 
 
-static void mqtt_thread(void* arg)
-{
-    int rc;
-    evrythng_handle_t handle = (evrythng_handle_t)arg;
-
-    while (!handle->mqtt_thread_stop)
-    {
-        if (SemaphoreWait(&handle->next_op_ready_sem, 0))
-        {
-            evrythng_message_cycle(handle, 400);
-            platform_sleep(100);
-            continue;
-        }
-
-        switch (handle->next_op.op)
-        {
-            case MQTT_PUBLISH:
-                rc = MQTTPublish(&handle->mqtt_client, 
-                        handle->next_op.topic,
-                        handle->next_op.message);
-                if (rc == MQTT_SUCCESS) 
-                {
-                    debug("published message: %s", handle->next_op.message->payload);
-                    handle->next_op.result = EVRYTHNG_SUCCESS;
-                }
-                else 
-                {
-                    error("could not publish message, rc = %d", rc);
-                    handle->next_op.result = EVRYTHNG_PUBLISH_ERROR;
-                }
-                break;
-
-            case MQTT_SUBSCRIBE:
-                rc = MQTTSubscribe(&handle->mqtt_client, 
-                        handle->next_op.topic, 
-                        handle->qos, 
-                        message_callback, 
-                        handle);
-                if (rc >= 0) 
-                {
-                    debug("successfully subscribed to %s", handle->next_op.topic);
-                    handle->next_op.result = EVRYTHNG_SUCCESS;
-                }
-                else
-                    handle->next_op.result = EVRYTHNG_SUBSCRIPTION_ERROR;
-                break;
-
-            case MQTT_UNSUBSCRIBE:
-                rc = MQTTUnsubscribe(&handle->mqtt_client, handle->next_op.topic);
-                if (rc >= 0) 
-                {
-                    debug("successfully unsubscribed from %s", handle->next_op.topic);
-                    handle->next_op.result = EVRYTHNG_SUCCESS;
-                }
-                else
-                    handle->next_op.result = EVRYTHNG_UNSUBSCRIPTION_ERROR;
-                break;
-
-            default:
-                handle->next_op.result = EVRYTHNG_BAD_ARGS;
-                break;
-        }
-
-        SemaphorePost(&handle->next_op_result_sem);
-    }
-}
-
-
-evrythng_return_t evrythng_start(evrythng_handle_t handle)
-{
-    if (!handle)
-        return EVRYTHNG_BAD_ARGS;
-    
-    ThreadCreate(&handle->mqtt_thread, 0, "mqtt_thread", mqtt_thread, 8192, (void*)handle);
-
-    return EVRYTHNG_SUCCESS;
-}
-
-
 evrythng_return_t evrythng_connect(evrythng_handle_t handle)
 {
     if (!handle)
         return EVRYTHNG_BAD_ARGS;
 
-    if (handle->initialized)
-        return evrythng_connect_internal(handle);
-
-    if (handle->secure_connection)
-        NetworkSecuredInit(&handle->mqtt_network, handle->ca_buf, handle->ca_size);
-    else
-        NetworkInit(&handle->mqtt_network);
-
-    if (!handle->client_id)
+    if (!handle->initialized)
     {
-        int i;
-        handle->client_id = (char*)platform_malloc(10);
         if (!handle->client_id)
-            return EVRYTHNG_MEMORY_ERROR;
-        memset(handle->client_id, 0, 10);
+        {
+            int i;
+            handle->client_id = (char*)platform_malloc(10);
+            if (!handle->client_id)
+                return EVRYTHNG_MEMORY_ERROR;
+            memset(handle->client_id, 0, 10);
 
-        for (i = 0; i < 9; i++)
-            handle->client_id[i] = '0' + rand() % 10;
-        handle->mqtt_conn_opts.clientID.cstring = handle->client_id;
-        debug("client ID: %s", handle->client_id);
+            for (i = 0; i < 9; i++)
+                handle->client_id[i] = '0' + rand() % 10;
+            handle->mqtt_conn_opts.clientID.cstring = handle->client_id;
+            debug("client ID: %s", handle->client_id);
+        }
+
+        ThreadCreate(&handle->mqtt_thread, handle->mqtt_thread_priority, "mqtt_thread", mqtt_thread, handle->mqtt_thread_stacksize, (void*)handle);
+
+        handle->initialized = 1;
     }
 
-    handle->initialized = 1;
+    if (MQTTisConnected(&handle->mqtt_client))
+    {
+        warning("already connected");
+        return EVRYTHNG_SUCCESS;
+    }
 
+    //return evrythng_async_op(handle, MQTT_CONNECT, 0, 0);
     return evrythng_connect_internal(handle);
 }
 
@@ -512,6 +451,11 @@ evrythng_return_t evrythng_connect_internal(evrythng_handle_t handle)
         warning("already connected");
         return EVRYTHNG_SUCCESS;
     }
+
+    if (handle->secure_connection)
+        NetworkSecuredInit(&handle->mqtt_network, handle->ca_buf, handle->ca_size);
+    else
+        NetworkInit(&handle->mqtt_network);
 
     int attempt;
     for (attempt = 1; attempt <= 3; attempt++)
@@ -566,13 +510,23 @@ evrythng_return_t evrythng_connect_internal(evrythng_handle_t handle)
 
 evrythng_return_t evrythng_disconnect(evrythng_handle_t handle)
 {
-    int rc;
-
     if (!handle)
         return EVRYTHNG_BAD_ARGS;
 
     if (!handle->initialized)
         return EVRYTHNG_SUCCESS;
+
+    if (!MQTTisConnected(&handle->mqtt_client))
+        return EVRYTHNG_SUCCESS;
+
+    //return evrythng_async_op(handle, MQTT_DISCONNECT, 0, 0);
+    return evrythng_disconnect_internal(handle);
+}
+
+
+evrythng_return_t evrythng_disconnect_internal(evrythng_handle_t handle)
+{
+    int rc;
 
     if (!MQTTisConnected(&handle->mqtt_client))
         return EVRYTHNG_SUCCESS;
@@ -604,7 +558,7 @@ evrythng_return_t evrythng_disconnect(evrythng_handle_t handle)
 }
 
 
-static evrythng_return_t evrythng_publish(
+evrythng_return_t evrythng_publish(
         evrythng_handle_t handle, 
         const char* entity, 
         const char* entity_id, 
@@ -666,7 +620,7 @@ static evrythng_return_t evrythng_publish(
 }
 
 
-static evrythng_return_t evrythng_subscribe(
+evrythng_return_t evrythng_subscribe(
         evrythng_handle_t handle, 
         const char* entity, 
         const char* entity_id, 
@@ -732,7 +686,7 @@ static evrythng_return_t evrythng_subscribe(
 }
 
 
-static evrythng_return_t evrythng_unsubscribe(
+evrythng_return_t evrythng_unsubscribe(
         evrythng_handle_t handle, 
         const char* entity, 
         const char* entity_id, 
@@ -782,388 +736,91 @@ static evrythng_return_t evrythng_unsubscribe(
 }
 
 
-evrythng_return_t evrythng_publish_thng_property(
-        evrythng_handle_t handle, 
-        const char* thng_id, 
-        const char* property_name, 
-        const char* property_json)
+static void mqtt_thread(void* arg)
 {
-    if (!thng_id || !property_name || !property_json)
-        return EVRYTHNG_BAD_ARGS;
+    int rc = MQTT_SUCCESS;
 
-    return evrythng_publish(handle, "thngs", thng_id, "properties", property_name, property_json);
+    evrythng_handle_t handle = (evrythng_handle_t)arg;
+
+    while (!handle->mqtt_thread_stop)
+    {
+        if (rc == MQTT_CONNECTION_LOST)
+        {
+            warning("mqtt server connection lost");
+            evrythng_disconnect_internal(handle);
+
+            if (handle->conlost_callback)
+            {
+                (*handle->conlost_callback)(handle);
+            }
+        }
+
+        if (SemaphoreWait(&handle->next_op_ready_sem, 0))
+        {
+            rc = MQTTYield(&handle->mqtt_client, 300);
+            platform_sleep(100);
+            continue;
+        }
+
+        switch (handle->next_op.op)
+        {
+            case MQTT_CONNECT:
+                handle->next_op.result = evrythng_connect_internal(handle);
+                break;
+
+            case MQTT_DISCONNECT:
+                handle->next_op.result = evrythng_disconnect_internal(handle);
+                break;
+
+            case MQTT_PUBLISH:
+                rc = MQTTPublish(&handle->mqtt_client, 
+                        handle->next_op.topic,
+                        handle->next_op.message);
+                if (rc == MQTT_SUCCESS) 
+                {
+                    debug("published message: %s", handle->next_op.message->payload);
+                    handle->next_op.result = EVRYTHNG_SUCCESS;
+                }
+                else 
+                {
+                    error("could not publish message, rc = %d", rc);
+                    handle->next_op.result = EVRYTHNG_PUBLISH_ERROR;
+                }
+                break;
+
+            case MQTT_SUBSCRIBE:
+                rc = MQTTSubscribe(&handle->mqtt_client, 
+                        handle->next_op.topic, 
+                        handle->qos, 
+                        message_callback, 
+                        handle);
+                if (rc >= 0) 
+                {
+                    debug("successfully subscribed to %s", handle->next_op.topic);
+                    handle->next_op.result = EVRYTHNG_SUCCESS;
+                }
+                else
+                    handle->next_op.result = EVRYTHNG_SUBSCRIPTION_ERROR;
+                break;
+
+            case MQTT_UNSUBSCRIBE:
+                rc = MQTTUnsubscribe(&handle->mqtt_client, handle->next_op.topic);
+                if (rc >= 0) 
+                {
+                    debug("successfully unsubscribed from %s", handle->next_op.topic);
+                    handle->next_op.result = EVRYTHNG_SUCCESS;
+                }
+                else
+                    handle->next_op.result = EVRYTHNG_UNSUBSCRIPTION_ERROR;
+                break;
+
+            default:
+                handle->next_op.result = EVRYTHNG_BAD_ARGS;
+                break;
+        }
+
+        SemaphorePost(&handle->next_op_result_sem);
+    }
 }
 
 
-evrythng_return_t evrythng_subscribe_thng_property(
-        evrythng_handle_t handle, 
-        const char* thng_id, 
-        const char* property_name, 
-        sub_callback *callback)
-{
-    if (!thng_id || !property_name || !callback)
-        return EVRYTHNG_BAD_ARGS;
-
-    return evrythng_subscribe(handle, "thngs", thng_id, "properties", property_name, callback);
-}
-
-evrythng_return_t evrythng_unsubscribe_thng_property(
-        evrythng_handle_t handle, 
-        const char* thng_id, 
-        const char* property_name)
-{
-    if (!thng_id || !property_name)
-        return EVRYTHNG_BAD_ARGS;
-
-    return evrythng_unsubscribe(handle, "thngs", thng_id, "properties", property_name);
-}
-
-
-evrythng_return_t evrythng_subscribe_thng_properties(
-        evrythng_handle_t handle, 
-        const char* thng_id, 
-        sub_callback *callback)
-{
-    if (!thng_id || !callback)
-        return EVRYTHNG_BAD_ARGS;
-
-    return evrythng_subscribe(handle, "thngs", thng_id, "properties", NULL, callback);
-}
-
-
-evrythng_return_t evrythng_unsubscribe_thng_properties(
-        evrythng_handle_t handle, 
-        const char* thng_id)
-{
-    if (!thng_id)
-        return EVRYTHNG_BAD_ARGS;
-
-    return evrythng_unsubscribe(handle, "thngs", thng_id, "properties", NULL);
-}
-
-
-evrythng_return_t evrythng_publish_thng_properties(
-        evrythng_handle_t handle, 
-        const char* thng_id, 
-        const char* properties_json)
-{
-    if (!thng_id || !properties_json)
-        return EVRYTHNG_BAD_ARGS;
-
-    return evrythng_publish(handle, "thngs", thng_id, "properties", NULL, properties_json);
-}
-
-
-evrythng_return_t evrythng_subscribe_thng_action(
-        evrythng_handle_t handle, 
-        const char* thng_id, 
-        const char* action_name, 
-        sub_callback *callback)
-{
-    if (!thng_id || !action_name || !callback)
-        return EVRYTHNG_BAD_ARGS;
-
-    return evrythng_subscribe(handle, "thngs", thng_id, "actions", action_name, callback);
-}
-
-
-evrythng_return_t evrythng_unsubscribe_thng_action(
-        evrythng_handle_t handle, 
-        const char* thng_id, 
-        const char* action_name)
-{
-    if (!thng_id || !action_name)
-        return EVRYTHNG_BAD_ARGS;
-
-    return evrythng_unsubscribe(handle, "thngs", thng_id, "actions", action_name);
-}
-
-
-evrythng_return_t evrythng_subscribe_thng_actions(
-        evrythng_handle_t handle, 
-        const char* thng_id, 
-        sub_callback *callback)
-{
-    if (!thng_id || !callback)
-        return EVRYTHNG_BAD_ARGS;
-
-    return evrythng_subscribe(handle, "thngs", thng_id, "actions", "all", callback);
-}
-
-
-evrythng_return_t evrythng_unsubscribe_thng_actions(
-        evrythng_handle_t handle, 
-        const char* thng_id)
-{
-    if (!thng_id)
-        return EVRYTHNG_BAD_ARGS;
-
-    return evrythng_unsubscribe(handle, "thngs", thng_id, "actions", "all");
-}
-
-
-evrythng_return_t evrythng_publish_thng_action(
-        evrythng_handle_t handle, 
-        const char* thng_id, 
-        const char* action_name, 
-        const char* action_json)
-{
-    if (!thng_id || !action_name || !action_json)
-        return EVRYTHNG_BAD_ARGS;
-
-    return evrythng_publish(handle, "thngs", thng_id, "actions", action_name, action_json);
-}
-
-
-evrythng_return_t evrythng_publish_thng_actions(
-        evrythng_handle_t handle, 
-        const char* thng_id, 
-        const char* actions_json)
-{
-    if (!thng_id || !actions_json)
-        return EVRYTHNG_BAD_ARGS;
-
-    return evrythng_publish(handle, "thngs", thng_id, "actions", "all", actions_json);
-}
-
-
-evrythng_return_t evrythng_subscribe_thng_location(
-        evrythng_handle_t handle, 
-        const char* thng_id, 
-        sub_callback *callback)
-{
-    if (!thng_id || !callback)
-        return EVRYTHNG_BAD_ARGS;
-
-    return evrythng_subscribe(handle, "thngs", thng_id, "location", NULL, callback);
-}
-
-
-evrythng_return_t evrythng_unsubscribe_thng_location(
-        evrythng_handle_t handle, 
-        const char* thng_id)
-{
-    if (!thng_id)
-        return EVRYTHNG_BAD_ARGS;
-
-    return evrythng_unsubscribe(handle, "thngs", thng_id, "location", NULL);
-}
-
-
-evrythng_return_t evrythng_publish_thng_location(
-        evrythng_handle_t handle, 
-        const char* thng_id, 
-        const char* location_json)
-{
-    if (!thng_id || !location_json)
-        return EVRYTHNG_BAD_ARGS;
-
-    return evrythng_publish(handle, "thngs", thng_id, "location", NULL, location_json);
-}
-
-
-evrythng_return_t evrythng_subscribe_product_property(
-        evrythng_handle_t handle, 
-        const char* product_id, 
-        const char* property_name, 
-        sub_callback *callback)
-{
-    if (!product_id || !property_name || !callback)
-        return EVRYTHNG_BAD_ARGS;
-
-    return evrythng_subscribe(handle, "products", product_id, "properties", property_name, callback);
-}
-
-
-evrythng_return_t evrythng_unsubscribe_product_property(
-        evrythng_handle_t handle, 
-        const char* product_id, 
-        const char* property_name)
-{
-    if (!product_id || !property_name)
-        return EVRYTHNG_BAD_ARGS;
-
-    return evrythng_unsubscribe(handle, "products", product_id, "properties", property_name);
-}
-
-
-evrythng_return_t evrythng_subscribe_product_properties(
-        evrythng_handle_t handle, 
-        const char* product_id, 
-        sub_callback *callback)
-{
-    if (!product_id || !callback)
-        return EVRYTHNG_BAD_ARGS;
-
-    return evrythng_subscribe(handle, "products", product_id, "properties", NULL, callback);
-}
-
-
-evrythng_return_t evrythng_unsubscribe_product_properties(
-        evrythng_handle_t handle, 
-        const char* product_id)
-{
-    if (!product_id)
-        return EVRYTHNG_BAD_ARGS;
-
-    return evrythng_unsubscribe(handle, "products", product_id, "properties", NULL);
-}
-
-
-evrythng_return_t evrythng_publish_product_property(
-        evrythng_handle_t handle, 
-        const char* product_id, 
-        const char* property_name, 
-        const char* property_json)
-{
-    if (!product_id || !property_name || !property_json)
-        return EVRYTHNG_BAD_ARGS;
-
-    return evrythng_publish(handle, "products", product_id, "properties", property_name, property_json);
-}
-
-
-evrythng_return_t evrythng_publish_product_properties(
-        evrythng_handle_t handle, 
-        const char* product_id, 
-        const char* properties_json)
-{
-    if (!product_id || !properties_json)
-        return EVRYTHNG_BAD_ARGS;
-
-    return evrythng_publish(handle, "products", product_id, "properties", NULL, properties_json);
-}
-
-
-evrythng_return_t evrythng_subscribe_product_action(
-        evrythng_handle_t handle, 
-        const char* product_id, 
-        const char* action_name, 
-        sub_callback *callback)
-{
-    if (!product_id || !action_name || !callback)
-        return EVRYTHNG_BAD_ARGS;
-
-    return evrythng_subscribe(handle, "products", product_id, "actions", action_name, callback);
-}
-
-
-evrythng_return_t evrythng_unsubscribe_product_action(
-        evrythng_handle_t handle, 
-        const char* product_id, 
-        const char* action_name)
-{
-    if (!product_id || !action_name)
-        return EVRYTHNG_BAD_ARGS;
-
-    return evrythng_unsubscribe(handle, "products", product_id, "actions", action_name);
-}
-
-
-evrythng_return_t evrythng_subscribe_product_actions(
-        evrythng_handle_t handle, 
-        const char* product_id, 
-        sub_callback *callback)
-{
-    if (!product_id || !callback)
-        return EVRYTHNG_BAD_ARGS;
-
-    return evrythng_subscribe(handle, "products", product_id, "actions", "all", callback);
-}
-
-
-evrythng_return_t evrythng_unsubscribe_product_actions(
-        evrythng_handle_t handle, 
-        const char* product_id)
-{
-    if (!product_id)
-        return EVRYTHNG_BAD_ARGS;
-
-    return evrythng_unsubscribe(handle, "products", product_id, "actions", "all");
-}
-
-
-evrythng_return_t evrythng_publish_product_action(
-        evrythng_handle_t handle, 
-        const char* product_id, 
-        const char* action_name, 
-        const char* action_json)
-{
-    if (!product_id || !action_name || !action_json)
-        return EVRYTHNG_BAD_ARGS;
-
-    return evrythng_publish(handle, "products", product_id, "actions", action_name, action_json);
-}
-
-
-evrythng_return_t evrythng_publish_product_actions(
-        evrythng_handle_t handle, 
-        const char* product_id, 
-        const char* actions_json)
-{
-    if (!product_id || !actions_json)
-        return EVRYTHNG_BAD_ARGS;
-
-    return evrythng_publish(handle, "products", product_id, "actions", "all", actions_json);
-}
-
-
-evrythng_return_t evrythng_subscribe_action(
-        evrythng_handle_t handle, 
-        const char* action_name, 
-        sub_callback *callback)
-{
-    if (!action_name)
-        return EVRYTHNG_BAD_ARGS;
-
-    return evrythng_subscribe(handle, "actions", NULL, NULL, action_name, callback);
-}
-
-
-evrythng_return_t evrythng_unsubscribe_action(
-        evrythng_handle_t handle, 
-        const char* action_name)
-{
-    if (!action_name)
-        return EVRYTHNG_BAD_ARGS;
-
-    return evrythng_unsubscribe(handle, "actions", NULL, NULL, action_name);
-}
-
-
-evrythng_return_t evrythng_subscribe_actions(evrythng_handle_t handle, sub_callback *callback)
-{
-    if (!callback)
-        return EVRYTHNG_BAD_ARGS;
-
-    return evrythng_subscribe(handle, "actions", NULL, NULL, "all", callback);
-}
-
-
-evrythng_return_t evrythng_unsubscribe_actions(evrythng_handle_t handle)
-{
-    return evrythng_unsubscribe(handle, "actions", NULL, NULL, "all");
-}
-
-
-evrythng_return_t evrythng_publish_action(
-        evrythng_handle_t handle, 
-        const char* action_name, 
-        const char* action_json)
-{
-    if (!action_name || !action_json)
-        return EVRYTHNG_BAD_ARGS;
-
-    return evrythng_publish(handle, "actions", NULL, NULL, action_name, action_json);
-}
-
-
-evrythng_return_t evrythng_publish_actions(
-        evrythng_handle_t handle, 
-        const char* actions_json)
-{
-    if (!actions_json)
-        return EVRYTHNG_BAD_ARGS;
-
-    return evrythng_publish(handle, "actions", NULL, NULL, "all", actions_json);
-}

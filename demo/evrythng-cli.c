@@ -58,7 +58,8 @@ void log_callback(evrythng_log_level_t level, const char* fmt, va_list vl)
 void conlost_callback(evrythng_handle_t h)
 {
     log("connection lost, trying to reconnect");
-    while (evrythng_connect(h) != EVRYTHNG_SUCCESS) {
+    while (evrythng_connect(h) != EVRYTHNG_SUCCESS) 
+    {
         log("Retrying");
         sleep(2);
     }
@@ -142,8 +143,6 @@ int main(int argc, char *argv[])
         log("Retrying");
         platform_sleep(3000);
     }
-
-    evrythng_start(opts.evt_handle);
 
     if (opts.sub) 
     {
