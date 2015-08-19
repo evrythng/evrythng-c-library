@@ -367,9 +367,9 @@ CuSuite* CuGetSuite(void)
 	SUITE_ADD_TEST(suite, test_tcp_connect_ok1);
     SUITE_ADD_TEST(suite, test_tcp_connect_ok2);
 
+#endif
 	SUITE_ADD_TEST(suite, test_subunsub_thng);
 	SUITE_ADD_TEST(suite, test_subunsub_prod);
-#endif
 
 #if 1
 	SUITE_ADD_TEST(suite, test_pubsub_thng_prop);

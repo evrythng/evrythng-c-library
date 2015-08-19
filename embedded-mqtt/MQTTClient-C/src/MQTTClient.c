@@ -328,6 +328,9 @@ int MQTTYield(MQTTClient* c, int timeout_ms)
     TimerInit(&timer);
     TimerCountdownMS(&timer, timeout_ms);
 
+    if (!c->isconnected)
+        return rc;
+
 	do
     {
         MutexLock(&c->mutex);

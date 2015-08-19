@@ -133,9 +133,12 @@ void evrythng_destroy_handle(evrythng_handle_t handle)
     if (!handle) return;
     if (handle->initialized && MQTTisConnected(&handle->mqtt_client)) evrythng_disconnect(handle);
 
-    handle->mqtt_thread_stop = 1;
-    ThreadJoin(&handle->mqtt_thread, 0x00FFFFFF);
-    ThreadDestroy(&handle->mqtt_thread);
+    if (handle->initialized)
+    {
+        handle->mqtt_thread_stop = 1;
+        ThreadJoin(&handle->mqtt_thread, 0x00FFFFFF);
+        ThreadDestroy(&handle->mqtt_thread);
+    }
 
     if (handle->host) platform_free(handle->host);
     if (handle->key) platform_free(handle->key);

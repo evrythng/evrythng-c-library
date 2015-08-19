@@ -244,7 +244,7 @@ int NetworkRead(Network* n, unsigned char* buffer, int len, int timeout_ms)
 			bytes += rc;
 	}
 
-    platform_printf("%s: recv %d bytes\n", __func__, bytes);
+    //platform_printf("%s: recv %d bytes\n", __func__, bytes);
 
 	return bytes;
 }
@@ -266,7 +266,7 @@ int NetworkWrite(Network* n, unsigned char* buffer, int length, int timeout_ms)
     else
         rc = tls_send(n->tls_handle, buffer, length);
 
-    platform_printf("%s: send rc = %d\n", __func__, rc);
+    //platform_printf("%s: send rc = %d\n", __func__, rc);
 
 	return rc;
 }
