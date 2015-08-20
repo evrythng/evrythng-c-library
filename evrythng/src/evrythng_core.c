@@ -1,3 +1,8 @@
+/*
+ * (c) Copyright 2012 EVRYTHNG Ltd London / Zurich
+ * www.evrythng.com
+ */
+
 #include <string.h>
 #include <stdlib.h>
 #include <stdarg.h>

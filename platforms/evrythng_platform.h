@@ -1,3 +1,8 @@
+/*
+ * (c) Copyright 2012 EVRYTHNG Ltd London / Zurich
+ * www.evrythng.com
+ */
+
 #if !defined(__MQTT_PLATFORM_)
 #define __MQTT_PLATFORM_
 

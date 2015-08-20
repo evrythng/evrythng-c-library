@@ -1,3 +1,8 @@
+/*
+ * (c) Copyright 2012 EVRYTHNG Ltd London / Zurich
+ * www.evrythng.com
+ */
+
 /*! \mainpage API documentation
  *
  * \link evrythng.h \endlink

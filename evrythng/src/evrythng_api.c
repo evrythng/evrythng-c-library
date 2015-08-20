@@ -1,3 +1,8 @@
+/*
+ * (c) Copyright 2012 EVRYTHNG Ltd London / Zurich
+ * www.evrythng.com
+ */
+
 #include "evrythng.h"
 
 evrythng_return_t evrythng_publish( evrythng_handle_t handle, const char* entity, 

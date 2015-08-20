@@ -1,3 +1,8 @@
+/*
+ * (c) Copyright 2012 EVRYTHNG Ltd London / Zurich
+ * www.evrythng.com
+ */
+
 const char cert_buffer[] = "\
 -----BEGIN CERTIFICATE-----\n\
 MIIDIDCCAomgAwIBAgIENd70zzANBgkqhkiG9w0BAQUFADBOMQswCQYDVQQGEwJV\n\

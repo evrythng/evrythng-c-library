@@ -1,3 +1,8 @@
+/*
+ * (c) Copyright 2012 EVRYTHNG Ltd London / Zurich
+ * www.evrythng.com
+ */
+
 #if !defined(_MQTT_WICED_)
 #define _MQTT_WICED_
 
