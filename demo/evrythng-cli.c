@@ -55,14 +55,14 @@ void log_callback(evrythng_log_level_t level, const char* fmt, va_list vl)
     printf("%s\n", msg);
 }
 
-void conlost_callback(evrythng_handle_t h)
+void on_connection_lost()
 {
-    log("connection lost, trying to reconnect");
-    while (evrythng_connect(h) != EVRYTHNG_SUCCESS) 
-    {
-        log("Retrying");
-        sleep(2);
-    }
+    log("evt lib connection lost");
+}
+
+void on_connection_restored()
+{
+    log("evt lib connection restored");
 }
 
 void print_usage() {
@@ -134,7 +134,7 @@ int main(int argc, char *argv[])
 
     evrythng_init_handle(&opts.evt_handle);
     evrythng_set_log_callback(opts.evt_handle, log_callback);
-    evrythng_set_conlost_callback(opts.evt_handle, conlost_callback);
+    evrythng_set_callbacks(opts.evt_handle, on_connection_lost, on_connection_restored);
     evrythng_set_url(opts.evt_handle, opts.url);
     evrythng_set_key(opts.evt_handle, opts.key);
 
