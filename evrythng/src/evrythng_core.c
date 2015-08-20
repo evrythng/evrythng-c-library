@@ -115,7 +115,7 @@ evrythng_return_t evrythng_init_handle(evrythng_handle_t* handle)
             (*handle)->serialize_buffer, sizeof((*handle)->serialize_buffer), 
             (*handle)->read_buffer, sizeof((*handle)->read_buffer));
 
-    (*handle)->mqtt_thread_stacksize = 4096;
+    (*handle)->mqtt_thread_stacksize = 8192;
 
     MutexInit(&(*handle)->next_op_mtx);
     SemaphoreInit(&(*handle)->next_op_ready_sem);
