@@ -282,7 +282,7 @@ int SemaphoreWait(Semaphore* s, int timeout_ms)
     wiced_result_t rc = wiced_rtos_get_semaphore(&s->sem, timeout_ms);
     if (rc != WICED_SUCCESS)
     {
-        platform_printf("%s: FAILED to wait semaphore %p: %d\n", __func__, &s->sem, rc);
+        //platform_printf("%s: FAILED to wait semaphore %p: %d\n", __func__, &s->sem, rc);
         return -1;
     }
 
@@ -294,6 +294,8 @@ static void func_wrapper(uint32_t arg)
 {
     Thread* t = (Thread*)arg;
     (*t->func)(t->arg);
+
+    SemaphorePost(&t->join_sem);
 }
 
 
@@ -307,6 +309,9 @@ int ThreadCreate(Thread* t,
     if (!t) return -1;
     t->func = func;
     t->arg = arg;
+
+    SemaphoreInit(&t->join_sem);
+
     if (wiced_rtos_create_thread(&t->tid, priority, name, func_wrapper, stack_size, t) != WICED_SUCCESS)
         return -1;
 
@@ -317,8 +322,13 @@ int ThreadCreate(Thread* t,
 int ThreadJoin(Thread* t, int timeout_ms)
 {
     if (!t) return -1;
-    if (wiced_rtos_thread_join(&t->tid) != WICED_SUCCESS)
+
+    if (SemaphoreWait(&t->join_sem, timeout_ms) != 0)
+    {
+        platform_printf("%s: timeout waiting for join\n", __func__);
         return -1;
+    }
+
     return 0;
 }
 
@@ -326,8 +336,11 @@ int ThreadJoin(Thread* t, int timeout_ms)
 int ThreadDestroy(Thread* t)
 {
     if (!t) return -1;
-    if (wiced_rtos_delete_thread(&t->tid) != WICED_SUCCESS)
-        return -1;
+    wiced_result_t rc = wiced_rtos_delete_thread(&t->tid);
+
+    SemaphoreDeinit(&t->join_sem);
+
+    if (rc != WICED_SUCCESS) return -1;
     return 0;
 }
 

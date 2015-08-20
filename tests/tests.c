@@ -22,9 +22,14 @@ void vApplicationIdleHook(void)
 static Semaphore sub_sem;
 
 
-void conlost_callback(evrythng_handle_t handle)
+void on_connection_lost()
 {
-    platform_printf("%s connection lost\n", __func__);
+    platform_printf("evt lib connection lost\n");
+}
+
+void on_connection_restored()
+{
+    platform_printf("evt lib connection restored\n");
 }
 
 
@@ -92,13 +97,6 @@ void test_init_handle_ok(CuTest* tc)
 void test_init_handle_fail(CuTest* tc)
 {
     CuAssertIntEquals(tc, EVRYTHNG_BAD_ARGS, evrythng_init_handle(0));
-}
-
-void test_destroy_handle(CuTest* tc)
-{
-    evrythng_handle_t h;
-    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, evrythng_init_handle(&h));
-    evrythng_destroy_handle(h);
 }
 
 void test_set_url_ok(CuTest* tc)
@@ -174,7 +172,7 @@ static void common_tcp_init_handle(evrythng_handle_t* h)
     evrythng_init_handle(h);
     evrythng_set_url(*h, MQTT_URL);
     evrythng_set_log_callback(*h, log_callback);
-    evrythng_set_conlost_callback(*h, conlost_callback);
+    evrythng_set_callbacks(*h, on_connection_lost, on_connection_restored);
     evrythng_set_key(*h, DEVICE_API_KEY);
 }
 
@@ -355,7 +353,6 @@ CuSuite* CuGetSuite(void)
 #if 1
 	SUITE_ADD_TEST(suite, test_init_handle_ok);
 	SUITE_ADD_TEST(suite, test_init_handle_fail);
-	SUITE_ADD_TEST(suite, test_destroy_handle);
 	SUITE_ADD_TEST(suite, test_set_url_ok);
 	SUITE_ADD_TEST(suite, test_set_url_fail);
 	SUITE_ADD_TEST(suite, test_set_key_ok);

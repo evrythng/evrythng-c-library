@@ -53,7 +53,9 @@ struct evrythng_ctx_t {
     unsigned char read_buffer[1024];
 
     evrythng_log_callback log_callback;
-    connection_lost_callback conlost_callback;
+
+    evrythng_callback on_connection_lost;
+    evrythng_callback on_connection_restored;
 
     Network     mqtt_network;
     MQTTClient  mqtt_client;
@@ -99,10 +101,7 @@ evrythng_return_t evrythng_init_handle(evrythng_handle_t* handle)
     (*handle)->mqtt_conn_opts.cleansession = 1;
     (*handle)->mqtt_conn_opts.willFlag = 0;
     (*handle)->mqtt_conn_opts.username.cstring = USERNAME;
-
     (*handle)->qos = 1;
-    (*handle)->log_callback = 0;
-    (*handle)->conlost_callback = 0;
 
     (*handle)->ca_buf = cert_buffer;
     (*handle)->ca_size = sizeof cert_buffer;
@@ -116,8 +115,6 @@ evrythng_return_t evrythng_init_handle(evrythng_handle_t* handle)
             (*handle)->serialize_buffer, sizeof((*handle)->serialize_buffer), 
             (*handle)->read_buffer, sizeof((*handle)->read_buffer));
 
-    (*handle)->mqtt_thread_stop = 0;
-    (*handle)->mqtt_thread_priority = 0;
     (*handle)->mqtt_thread_stacksize = 4096;
 
     MutexInit(&(*handle)->next_op_mtx);
@@ -248,12 +245,12 @@ evrythng_return_t evrythng_set_log_callback(evrythng_handle_t handle, evrythng_l
 }
 
 
-evrythng_return_t evrythng_set_conlost_callback(evrythng_handle_t handle, connection_lost_callback callback)
+evrythng_return_t evrythng_set_callbacks(evrythng_handle_t handle, evrythng_callback on_connection_lost,  evrythng_callback on_connection_restored)
 {
-    if (!handle)
-        return EVRYTHNG_BAD_ARGS;
+    if (!handle) return EVRYTHNG_BAD_ARGS;
 
-    handle->conlost_callback = callback;
+    handle->on_connection_lost = on_connection_lost;
+    handle->on_connection_restored = on_connection_restored;
 
     return EVRYTHNG_SUCCESS;
 }
@@ -440,8 +437,7 @@ evrythng_return_t evrythng_connect(evrythng_handle_t handle)
         return EVRYTHNG_SUCCESS;
     }
 
-    //return evrythng_async_op(handle, MQTT_CONNECT, 0, 0);
-    return evrythng_connect_internal(handle);
+    return evrythng_async_op(handle, MQTT_CONNECT, 0, 0);
 }
 
 
@@ -463,7 +459,7 @@ evrythng_return_t evrythng_connect_internal(evrythng_handle_t handle)
     int attempt;
     for (attempt = 1; attempt <= 3; attempt++)
     {
-        debug("connecting to host: %s, port: %d, attempt: %d", handle->host, handle->port, attempt);
+        debug("connecting to host: %s, port: %d (%d)", handle->host, handle->port, attempt);
         if (NetworkConnect(&handle->mqtt_network, handle->host, handle->port))
         {
             error("Failed to establish network connection");
@@ -522,8 +518,7 @@ evrythng_return_t evrythng_disconnect(evrythng_handle_t handle)
     if (!MQTTisConnected(&handle->mqtt_client))
         return EVRYTHNG_SUCCESS;
 
-    //return evrythng_async_op(handle, MQTT_DISCONNECT, 0, 0);
-    return evrythng_disconnect_internal(handle);
+    return evrythng_async_op(handle, MQTT_DISCONNECT, 0, 0);
 }
 
 
@@ -752,9 +747,21 @@ static void mqtt_thread(void* arg)
             warning("mqtt server connection lost");
             evrythng_disconnect_internal(handle);
 
-            if (handle->conlost_callback)
+            if (handle->on_connection_lost)
+                (*handle->on_connection_lost)();
+
+            while (!handle->mqtt_thread_stop)
             {
-                (*handle->conlost_callback)(handle);
+                if (evrythng_connect_internal(handle) != EVRYTHNG_SUCCESS)
+                {
+                    platform_printf("could not connect, retrying\n");
+                    platform_sleep(300);
+                    continue;
+                }
+                
+                if (handle->on_connection_restored)
+                    (*handle->on_connection_restored)();
+                break;
             }
         }
 

@@ -32,6 +32,7 @@ typedef struct Thread
     wiced_thread_t tid;
     void* arg;
     void (*func)(void*);
+    Semaphore join_sem;
 } Thread;
 
 

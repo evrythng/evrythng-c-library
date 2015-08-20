@@ -60,9 +60,9 @@ typedef void (*evrythng_log_callback)(evrythng_log_level_t level, const char* fm
 typedef struct evrythng_ctx_t* evrythng_handle_t;
 
 
-/** @brief Connection lost callback prototype.
+/** @brief Callback prototype.
  */
-typedef void (*connection_lost_callback)(evrythng_handle_t handle); 
+typedef void (*evrythng_callback)(); 
 
 
 /** @brief Callback prototype used for subscribe functions,
@@ -185,7 +185,8 @@ evrythng_return_t evrythng_set_log_callback(evrythng_handle_t handle, evrythng_l
  * @return    \b EVRYTHNG_BAD_ARGS     if handle or callback is a null pointer \n
  *            \b EVRYTHNG_SUCCESS      on success \n
  */
-evrythng_return_t evrythng_set_conlost_callback(evrythng_handle_t handle, connection_lost_callback callback);
+evrythng_return_t evrythng_set_callbacks(evrythng_handle_t handle, 
+        evrythng_callback on_connection_lost, evrythng_callback on_connection_restored);
 
 
 /** @brief Set internal thread priority.
