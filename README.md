@@ -5,8 +5,7 @@ A core C library for the EVRYTHNG API
 
 In order to compile the library and run tests you should:
 
-1. have the following software installed:
-
+Have the following software installed:
 * Standart GCC toolchain
 * make
 * CMake
@@ -20,7 +19,7 @@ The library was build and tested using the following versions of the software:
 * cmake version 2.8.12.2
 * libssl-dev version 1.0.1f-1ubuntu9
 
-2. Make a copy of `Config_example` as `Config` and edit it by
+Make a copy of `Config_example` as `Config` and edit it by
 filling in the correct values corresponding to your [EVRYTHNG account](https://dashboard.evrythng.com/) content.
 You should create a [Product](https://dashboard.evrythng.com/documentation/api/products), [Thng](https://dashboard.evrythng.com/documentation/api/thngs) and generate a [Device Application Key](https://dashboard.evrythng.com/documentation/api/thngs#thngs-devices).
 
