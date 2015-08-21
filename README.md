@@ -83,3 +83,56 @@ will print help. Add "-c ./docs/client.pem" option while establishing secure con
 Using "--pub" demo applicaton will send random values from [0,100] range to provided property every 2 seconds.
 
 Additionaly you can use a helpfull script ./demo.sh to run demo application.
+
+## Programming guide
+
+Writing a client for EVRYTHNG cloud using the с library can be splitted into the following steps:
+* Declare, initialize and setup a handle of type `evrythng_handle_t` used to make all library api calls
+* Connect to the EVRYTHNG cloud
+* Subscribe or publish properties/actions/locations using appropriate api calls
+* Disconnect and deinitialize handle when you are done
+
+### Initializing and setting up a handle
+
+All library api calls require a handle as a first parameter to operate. Basically this handle is an opaque pointer to a structure which contains private and user provided data to operate with the cloud. The structure is not exposed to the user of the library and known only to the core functionality, so do not try to access members of it directly and use api calls to set it up. The following code snippet demonstrates the minimum (hence mandatory) sequence of calls to initialize a handle:
+```
+evrythng_handle_t handle;
+
+evrythng_init_handle(&handle);
+evrythng_set_url(handle, "tcp://mqtt.evrythng.com:1883");
+evrythng_set_key(handle, "<your api key here>");
+```
+By analyzing the url provided the library will decide whether to establish a secured connection or not. If your url starts with **tcp://** an unsecured connection will be established and if it starts with **ssl://** - secured. Note that the port at the end of url is mandatory. So to establish an unsecured connection you'll use an url like **tcp://mqtt.evrythng.com:1883**, and for secured **ssl://mqtt.evrythng.com:443**. All other settings will have default values. Here is a snippet to setup optional settings:
+```
+evrythng_set_log_callback(handle, log_callback); /* default: null pointer */
+evrythng_set_callbacks(handle, on_connection_lost, on_connection_restored); /* default: null pointers */
+evrythng_set_client_id(handle, "<client id>); /* default: a 10 bytes string of random numbers */
+evrythng_set_qos(handle, 1); /* 0,1 or 2, default: 1*/
+evrythng_set_thread_priority(handle, 1); /* any meaningfull priority for the underlying OS, default: 0 */
+evrythng_set_thread_stacksize(handle, 4096); /* default: 8192 */
+```
+The meaning of some settings (regarding thread and callbacks) will be become clear in the next section.
+
+### Connecting to the EVRYTHNG cloud
+
+The api call to connect to the cloud is `evrythng_connnect`. Normally you would like to do something like this in the very beginning of you app:
+```
+while (evrythng_connect(evt_handle) != EVRYTHNG_SUCCESS)
+{
+  log("Retrying");
+  sleep(3);
+}
+```
+Internally the library launches a thread for managing all communication with the cloud. Priority and stack size of it can be configured using api calls listed above. The library automatically reconnects to the cloud and restores subcriptions in case of connection was lost. Your application can be notified about the fact that connection was lost and restored by providing callbacks via api call `evrythng_set_callbacks`. These callbacks are only for doing some stuff specifiс to your application. Callbacks are called in the context of internal library thread. Please, do not try to connect/disconnect or use any other api calls inside these callbacks as it will lead to internal thread lock.
+
+### Working with the cloud
+
+After a connection is successfully established you can start using api calls subscribe to and publish properties/actions/locations using appropriate api calls. It is possible to publish/subscribe from different threads of your application as the library is thread safe.
+
+### Finalizing
+
+When you are done working with the cloud you should disconnect and deninitilaize the handle to avoid any resource leaks:
+```
+evrythng_disconnect(handle);
+evrythng_destroy_handle(handle);
+```
