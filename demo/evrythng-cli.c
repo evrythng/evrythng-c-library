@@ -60,10 +60,14 @@ void log_callback(evrythng_log_level_t level, const char* fmt, va_list vl)
     printf("%s\n", msg);
 }
 
-void conlost_callback(evrythng_handle_t h)
+void on_connection_lost()
 {
-    log("connection lost, exiting...");
-    exit(1);
+    log("evt lib connection lost");
+}
+
+void on_connection_restored()
+{
+    log("evt lib connection restored");
 }
 
 void print_usage() {
@@ -135,23 +139,21 @@ int main(int argc, char *argv[])
 
     evrythng_init_handle(&opts.evt_handle);
     evrythng_set_log_callback(opts.evt_handle, log_callback);
-    evrythng_set_conlost_callback(opts.evt_handle, conlost_callback);
+    evrythng_set_callbacks(opts.evt_handle, on_connection_lost, on_connection_restored);
     evrythng_set_url(opts.evt_handle, opts.url);
     evrythng_set_key(opts.evt_handle, opts.key);
-    evrythng_set_certificate(opts.evt_handle, opts.cafile, opts.cafile ? strlen(opts.cafile) : 0);
 
-    log("Connecting to %s", opts.url);
-    while(evrythng_connect(opts.evt_handle) != EVRYTHNG_SUCCESS) {
+    while (evrythng_connect(opts.evt_handle) != EVRYTHNG_SUCCESS)
+    {
         log("Retrying");
-        sleep(2);
+        platform_sleep(3000);
     }
-    log("Evrythng client Connected");
 
     if (opts.sub) 
     {
-        log("Subscribing to property %s", opts.prop);
         evrythng_subscribe_thng_property(opts.evt_handle, opts.thng, opts.prop, print_property_callback);
-        while(1) sleep(1);
+        while(1) platform_sleep(1000);
+ 
     } 
     else 
     {
@@ -161,8 +163,8 @@ int main(int argc, char *argv[])
             char msg[128];
             sprintf(msg, "[{\"value\": %d}]", value);
             log("Publishing value %d to property %s", value, opts.prop);
-            evrythng_publish_thng_property(opts.evt_handle, opts.thng, opts.prop, msg, NULL);
-            sleep(1);
+            evrythng_publish_thng_property(opts.evt_handle, opts.thng, opts.prop, msg);
+            platform_sleep(2000);
         }
     }
 

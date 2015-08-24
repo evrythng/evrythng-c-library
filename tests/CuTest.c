@@ -10,7 +10,7 @@
 
 char* CuStrAlloc(int size)
 {
-	char* newStr = (char*) malloc( sizeof(char) * (size) );
+	char* newStr = (char*) platform_malloc( sizeof(char) * (size) );
 	return newStr;
 }
 
@@ -30,30 +30,30 @@ void CuStringInit(CuString* str)
 {
 	str->length = 0;
 	str->size = STRING_MAX;
-	str->buffer = (char*) malloc(sizeof(char) * str->size);
+	str->buffer = (char*) platform_malloc(sizeof(char) * str->size);
 	str->buffer[0] = '\0';
 }
 
 CuString* CuStringNew(void)
 {
-	CuString* str = (CuString*) malloc(sizeof(CuString));
+	CuString* str = (CuString*) platform_malloc(sizeof(CuString));
 	str->length = 0;
 	str->size = STRING_MAX;
-	str->buffer = (char*) malloc(sizeof(char) * str->size);
+	str->buffer = (char*) platform_malloc(sizeof(char) * str->size);
 	str->buffer[0] = '\0';
 	return str;
 }
 
 void CuStringDelete(CuString *str)
 {
-        if (!str) return;
-        free(str->buffer);
-        free(str);
+    if (!str) return;
+    platform_free(str->buffer);
+    platform_free(str);
 }
 
 void CuStringResize(CuString* str, int newSize)
 {
-	str->buffer = (char*) realloc(str->buffer, sizeof(char) * newSize);
+	str->buffer = (char*) platform_realloc(str->buffer, sizeof(char) * newSize);
 	str->size = newSize;
 }
 
@@ -111,9 +111,8 @@ void CuTestInit(CuTest* t, const char* name, TestFunction function)
 	t->name = CuStrCopy(name);
 	t->failed = 0;
 	t->ran = 0;
-	t->message = NULL;
 	t->function = function;
-	t->jumpBuf = NULL;
+    CuStringInit(&t->message);
 }
 
 CuTest* CuTestNew(const char* name, TestFunction function)
@@ -125,33 +124,24 @@ CuTest* CuTestNew(const char* name, TestFunction function)
 
 void CuTestDelete(CuTest *t)
 {
-        if (!t) return;
-        free(t->name);
-        free(t);
+    if (!t) return;
+    platform_free(t->name);
+    platform_free(t->message.buffer);
+    platform_free(t);
 }
 
 void CuTestRun(CuTest* tc)
 {
-	jmp_buf buf;
-	tc->jumpBuf = &buf;
-	if (setjmp(buf) == 0)
-	{
-		tc->ran = 1;
-		(tc->function)(tc);
-	}
-	tc->jumpBuf = 0;
+    tc->ran = 1;
+    (tc->function)(tc);
 }
 
 static void CuFailInternal(CuTest* tc, const char* file, int line, CuString* string)
 {
-	char buf[HUGE_STRING_LEN];
-
-	sprintf(buf, "%s:%d: ", file, line);
-	CuStringInsert(string, buf, 0);
-
 	tc->failed = 1;
-	tc->message = string->buffer;
-	if (tc->jumpBuf != 0) longjmp(*(tc->jumpBuf), 0);
+    CuStringAppendFormat(&tc->message,  "%s:%d: ", file, line);
+    CuStringAppend(&tc->message, string->buffer);
+    platform_free(string->buffer);
 }
 
 void CuFail_Line(CuTest* tc, const char* file, int line, const char* message2, const char* message)
@@ -258,8 +248,7 @@ void CuSuiteDelete(CuSuite *testSuite)
                         CuTestDelete(testSuite->list[n]);
                 }
         }
-        free(testSuite);
-
+        platform_free(testSuite);
 }
 
 void CuSuiteAdd(CuSuite* testSuite, CuTest *testCase)
@@ -297,7 +286,7 @@ void CuSuiteSummary(CuSuite* testSuite, CuString* summary)
 		CuTest* testCase = testSuite->list[i];
 		CuStringAppend(summary, testCase->failed ? "F" : ".");
 	}
-	CuStringAppend(summary, "\n\n");
+	CuStringAppend(summary, "\n\n\r");
 }
 
 void CuSuiteDetails(CuSuite* testSuite, CuString* details)
@@ -309,14 +298,14 @@ void CuSuiteDetails(CuSuite* testSuite, CuString* details)
 	{
 		int passCount = testSuite->count - testSuite->failCount;
 		const char* testWord = passCount == 1 ? "test" : "tests";
-		CuStringAppendFormat(details, "OK (%d %s)\n", passCount, testWord);
+		CuStringAppendFormat(details, "OK (%d %s)\n\r", passCount, testWord);
 	}
 	else
 	{
 		if (testSuite->failCount == 1)
-			CuStringAppend(details, "There was 1 failure:\n");
+			CuStringAppend(details, "There was 1 failure:\n\r");
 		else
-			CuStringAppendFormat(details, "There were %d failures:\n", testSuite->failCount);
+			CuStringAppendFormat(details, "There were %d failures:\n\r", testSuite->failCount);
 
 		for (i = 0 ; i < testSuite->count ; ++i)
 		{
@@ -324,14 +313,14 @@ void CuSuiteDetails(CuSuite* testSuite, CuString* details)
 			if (testCase->failed)
 			{
 				failCount++;
-				CuStringAppendFormat(details, "%d) %s: %s\n",
-					failCount, testCase->name, testCase->message);
+				CuStringAppendFormat(details, "%d) %s: %s\n\r",
+					failCount, testCase->name, testCase->message.buffer);
 			}
 		}
-		CuStringAppend(details, "\n!!!FAILURES!!!\n");
+		CuStringAppend(details, "\n\r!!!FAILURES!!!\n\r");
 
 		CuStringAppendFormat(details, "Runs: %d ",   testSuite->count);
 		CuStringAppendFormat(details, "Passes: %d ", testSuite->count - testSuite->failCount);
-		CuStringAppendFormat(details, "Fails: %d\n",  testSuite->failCount);
+		CuStringAppendFormat(details, "Fails: %d\n\r",  testSuite->failCount);
 	}
 }

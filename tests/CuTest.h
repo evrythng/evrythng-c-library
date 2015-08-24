@@ -1,7 +1,7 @@
 #ifndef CU_TEST_H
 #define CU_TEST_H
 
-#include "platform.h"
+#include "evrythng_platform.h"
 
 #include <setjmp.h>
 #include <stdarg.h>
@@ -13,7 +13,7 @@
 char* CuStrAlloc(int size);
 char* CuStrCopy(const char* old);
 
-#define CU_ALLOC(TYPE)		((TYPE*) malloc(sizeof(TYPE)))
+#define CU_ALLOC(TYPE)		((TYPE*) platform_malloc(sizeof(TYPE)))
 
 #define HUGE_STRING_LEN	8192
 #define STRING_MAX		256
@@ -48,8 +48,7 @@ struct CuTest
 	TestFunction function;
 	int failed;
 	int ran;
-	const char* message;
-	jmp_buf *jumpBuf;
+	CuString message;
 };
 
 void CuTestInit(CuTest* t, const char* name, TestFunction function);

@@ -6,14 +6,15 @@ set (MINOR_VERSION 0)
 
 set(COMMON_PREFIX CMakeTimestamps)
 
-add_definitions(-DOPENSSL)
-add_definitions(-DNO_PERSISTENCE)
-add_definitions(-DNOSTACKTRACE)
-add_definitions(-DCONFIG_IPV6)
+add_definitions(-DPOSIX_PLATFORM)
 
 include_directories(${PROJECT_SOURCE_DIR}/evrythng/include)
-include_directories(${PROJECT_SOURCE_DIR}/mqtt/src)
-set(SRC ${PROJECT_SOURCE_DIR}/evrythng/src/evrythng.c)
+include_directories(${PROJECT_SOURCE_DIR}/embedded-mqtt/MQTTClient-C/src)
+include_directories(${PROJECT_SOURCE_DIR}/embedded-mqtt/MQTTClient-C/src/linux)
+include_directories(${PROJECT_SOURCE_DIR}/embedded-mqtt/MQTTPacket/src)
+include_directories(${PROJECT_SOURCE_DIR}/platforms)
+
+set(SRC ${PROJECT_SOURCE_DIR}/evrythng/src/evrythng_api.c ${PROJECT_SOURCE_DIR}/evrythng/src/evrythng_core.c)
 include(cmake/mqtt.cmake)
 include(cmake/toolchainfile.cmake)
 
