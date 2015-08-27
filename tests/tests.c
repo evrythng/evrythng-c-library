@@ -405,7 +405,7 @@ void RunAllTests()
 	CuSuiteRun(suite);
 	CuSuiteSummary(suite, output);
 	CuSuiteDetails(suite, output);
-    platform_printf("%s\n\r", output->buffer);
+    platform_printf("%s\n", output->buffer);
     CuStringDelete(output);
     CuSuiteDelete(suite);
 
