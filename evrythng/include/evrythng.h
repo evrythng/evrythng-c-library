@@ -27,7 +27,6 @@
 
 #include <stdlib.h>
 #include <stdarg.h>
-#include "evrythng_platform.h"
 
 
 typedef enum _evrythng_return_t 
