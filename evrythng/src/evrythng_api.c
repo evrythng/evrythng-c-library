@@ -9,12 +9,13 @@ evrythng_return_t evrythng_publish( evrythng_handle_t handle, const char* entity
         const char* entity_id, const char* data_type, const char* data_name, const char* property_json);
 
 evrythng_return_t evrythng_subscribe( evrythng_handle_t handle, const char* entity, 
-        const char* entity_id, const char* data_type, const char* data_name, sub_callback *callback);
+        const char* entity_id, const char* data_type, const char* data_name, 
+        int pub_states, sub_callback *callback);
 
 evrythng_return_t evrythng_unsubscribe( evrythng_handle_t handle, const char* entity, 
         const char* entity_id, const char* data_type, const char* data_name);
 
-evrythng_return_t evrythng_publish_thng_property(
+evrythng_return_t EvrythngPubThngProperty(
         evrythng_handle_t handle, 
         const char* thng_id, 
         const char* property_name, 
@@ -27,19 +28,20 @@ evrythng_return_t evrythng_publish_thng_property(
 }
 
 
-evrythng_return_t evrythng_subscribe_thng_property(
+evrythng_return_t EvrythngSubThngProperty(
         evrythng_handle_t handle, 
         const char* thng_id, 
         const char* property_name, 
+        int pub_states,
         sub_callback *callback)
 {
     if (!thng_id || !property_name || !callback)
         return EVRYTHNG_BAD_ARGS;
 
-    return evrythng_subscribe(handle, "thngs", thng_id, "properties", property_name, callback);
+    return evrythng_subscribe(handle, "thngs", thng_id, "properties", property_name, pub_states, callback);
 }
 
-evrythng_return_t evrythng_unsubscribe_thng_property(
+evrythng_return_t EvrythngUnsubThngProperty(
         evrythng_handle_t handle, 
         const char* thng_id, 
         const char* property_name)
@@ -51,19 +53,20 @@ evrythng_return_t evrythng_unsubscribe_thng_property(
 }
 
 
-evrythng_return_t evrythng_subscribe_thng_properties(
+evrythng_return_t EvrythngSubThngProperties(
         evrythng_handle_t handle, 
         const char* thng_id, 
+        int pub_states,
         sub_callback *callback)
 {
     if (!thng_id || !callback)
         return EVRYTHNG_BAD_ARGS;
 
-    return evrythng_subscribe(handle, "thngs", thng_id, "properties", NULL, callback);
+    return evrythng_subscribe(handle, "thngs", thng_id, "properties", NULL, pub_states, callback);
 }
 
 
-evrythng_return_t evrythng_unsubscribe_thng_properties(
+evrythng_return_t EvrythngUnsubThngProperties(
         evrythng_handle_t handle, 
         const char* thng_id)
 {
@@ -74,7 +77,7 @@ evrythng_return_t evrythng_unsubscribe_thng_properties(
 }
 
 
-evrythng_return_t evrythng_publish_thng_properties(
+evrythng_return_t EvrythngPubThngProperties(
         evrythng_handle_t handle, 
         const char* thng_id, 
         const char* properties_json)
@@ -86,20 +89,21 @@ evrythng_return_t evrythng_publish_thng_properties(
 }
 
 
-evrythng_return_t evrythng_subscribe_thng_action(
+evrythng_return_t EvrythngSubThngAction(
         evrythng_handle_t handle, 
         const char* thng_id, 
         const char* action_name, 
+        int pub_states,
         sub_callback *callback)
 {
     if (!thng_id || !action_name || !callback)
         return EVRYTHNG_BAD_ARGS;
 
-    return evrythng_subscribe(handle, "thngs", thng_id, "actions", action_name, callback);
+    return evrythng_subscribe(handle, "thngs", thng_id, "actions", action_name, pub_states, callback);
 }
 
 
-evrythng_return_t evrythng_unsubscribe_thng_action(
+evrythng_return_t EvrythngUnsubThngAction(
         evrythng_handle_t handle, 
         const char* thng_id, 
         const char* action_name)
@@ -111,19 +115,20 @@ evrythng_return_t evrythng_unsubscribe_thng_action(
 }
 
 
-evrythng_return_t evrythng_subscribe_thng_actions(
+evrythng_return_t EvrythngSubThngActions(
         evrythng_handle_t handle, 
         const char* thng_id, 
+        int pub_states,
         sub_callback *callback)
 {
     if (!thng_id || !callback)
         return EVRYTHNG_BAD_ARGS;
 
-    return evrythng_subscribe(handle, "thngs", thng_id, "actions", "all", callback);
+    return evrythng_subscribe(handle, "thngs", thng_id, "actions", "all", pub_states, callback);
 }
 
 
-evrythng_return_t evrythng_unsubscribe_thng_actions(
+evrythng_return_t EvrythngUnsubThngActions(
         evrythng_handle_t handle, 
         const char* thng_id)
 {
@@ -134,7 +139,7 @@ evrythng_return_t evrythng_unsubscribe_thng_actions(
 }
 
 
-evrythng_return_t evrythng_publish_thng_action(
+evrythng_return_t EvrythngPubThngAction(
         evrythng_handle_t handle, 
         const char* thng_id, 
         const char* action_name, 
@@ -147,7 +152,7 @@ evrythng_return_t evrythng_publish_thng_action(
 }
 
 
-evrythng_return_t evrythng_publish_thng_actions(
+evrythng_return_t EvrythngPubThngActions(
         evrythng_handle_t handle, 
         const char* thng_id, 
         const char* actions_json)
@@ -159,19 +164,20 @@ evrythng_return_t evrythng_publish_thng_actions(
 }
 
 
-evrythng_return_t evrythng_subscribe_thng_location(
+evrythng_return_t EvrythngSubThngLocation(
         evrythng_handle_t handle, 
         const char* thng_id, 
+        int pub_states,
         sub_callback *callback)
 {
     if (!thng_id || !callback)
         return EVRYTHNG_BAD_ARGS;
 
-    return evrythng_subscribe(handle, "thngs", thng_id, "location", NULL, callback);
+    return evrythng_subscribe(handle, "thngs", thng_id, "location", NULL, pub_states, callback);
 }
 
 
-evrythng_return_t evrythng_unsubscribe_thng_location(
+evrythng_return_t EvrythngUnsubThngLocation(
         evrythng_handle_t handle, 
         const char* thng_id)
 {
@@ -182,7 +188,7 @@ evrythng_return_t evrythng_unsubscribe_thng_location(
 }
 
 
-evrythng_return_t evrythng_publish_thng_location(
+evrythng_return_t EvrythngPubThngLocation(
         evrythng_handle_t handle, 
         const char* thng_id, 
         const char* location_json)
@@ -194,20 +200,21 @@ evrythng_return_t evrythng_publish_thng_location(
 }
 
 
-evrythng_return_t evrythng_subscribe_product_property(
+evrythng_return_t EvrythngSubProductProperty(
         evrythng_handle_t handle, 
         const char* product_id, 
         const char* property_name, 
+        int pub_states,
         sub_callback *callback)
 {
     if (!product_id || !property_name || !callback)
         return EVRYTHNG_BAD_ARGS;
 
-    return evrythng_subscribe(handle, "products", product_id, "properties", property_name, callback);
+    return evrythng_subscribe(handle, "products", product_id, "properties", property_name, pub_states, callback);
 }
 
 
-evrythng_return_t evrythng_unsubscribe_product_property(
+evrythng_return_t EvrythngUnsubProductProperty(
         evrythng_handle_t handle, 
         const char* product_id, 
         const char* property_name)
@@ -219,19 +226,20 @@ evrythng_return_t evrythng_unsubscribe_product_property(
 }
 
 
-evrythng_return_t evrythng_subscribe_product_properties(
+evrythng_return_t EvrythngSubProductProperties(
         evrythng_handle_t handle, 
         const char* product_id, 
+        int pub_states,
         sub_callback *callback)
 {
     if (!product_id || !callback)
         return EVRYTHNG_BAD_ARGS;
 
-    return evrythng_subscribe(handle, "products", product_id, "properties", NULL, callback);
+    return evrythng_subscribe(handle, "products", product_id, "properties", NULL, pub_states, callback);
 }
 
 
-evrythng_return_t evrythng_unsubscribe_product_properties(
+evrythng_return_t EvrythngUnsubProductProperties(
         evrythng_handle_t handle, 
         const char* product_id)
 {
@@ -242,7 +250,7 @@ evrythng_return_t evrythng_unsubscribe_product_properties(
 }
 
 
-evrythng_return_t evrythng_publish_product_property(
+evrythng_return_t EvrythngPubProductProperty(
         evrythng_handle_t handle, 
         const char* product_id, 
         const char* property_name, 
@@ -255,7 +263,7 @@ evrythng_return_t evrythng_publish_product_property(
 }
 
 
-evrythng_return_t evrythng_publish_product_properties(
+evrythng_return_t EvrythngPubProductProperties(
         evrythng_handle_t handle, 
         const char* product_id, 
         const char* properties_json)
@@ -267,20 +275,21 @@ evrythng_return_t evrythng_publish_product_properties(
 }
 
 
-evrythng_return_t evrythng_subscribe_product_action(
+evrythng_return_t EvrythngSubProductAction(
         evrythng_handle_t handle, 
         const char* product_id, 
         const char* action_name, 
+        int pub_states,
         sub_callback *callback)
 {
     if (!product_id || !action_name || !callback)
         return EVRYTHNG_BAD_ARGS;
 
-    return evrythng_subscribe(handle, "products", product_id, "actions", action_name, callback);
+    return evrythng_subscribe(handle, "products", product_id, "actions", action_name, pub_states, callback);
 }
 
 
-evrythng_return_t evrythng_unsubscribe_product_action(
+evrythng_return_t EvrythngUnsubProductAction(
         evrythng_handle_t handle, 
         const char* product_id, 
         const char* action_name)
@@ -292,19 +301,20 @@ evrythng_return_t evrythng_unsubscribe_product_action(
 }
 
 
-evrythng_return_t evrythng_subscribe_product_actions(
+evrythng_return_t EvrythngSubProductActions(
         evrythng_handle_t handle, 
         const char* product_id, 
+        int pub_states,
         sub_callback *callback)
 {
     if (!product_id || !callback)
         return EVRYTHNG_BAD_ARGS;
 
-    return evrythng_subscribe(handle, "products", product_id, "actions", "all", callback);
+    return evrythng_subscribe(handle, "products", product_id, "actions", "all", pub_states, callback);
 }
 
 
-evrythng_return_t evrythng_unsubscribe_product_actions(
+evrythng_return_t EvrythngUnsubProductActions(
         evrythng_handle_t handle, 
         const char* product_id)
 {
@@ -315,7 +325,7 @@ evrythng_return_t evrythng_unsubscribe_product_actions(
 }
 
 
-evrythng_return_t evrythng_publish_product_action(
+evrythng_return_t EvrythngPubProductAction(
         evrythng_handle_t handle, 
         const char* product_id, 
         const char* action_name, 
@@ -328,7 +338,7 @@ evrythng_return_t evrythng_publish_product_action(
 }
 
 
-evrythng_return_t evrythng_publish_product_actions(
+evrythng_return_t EvrythngPubProductActions(
         evrythng_handle_t handle, 
         const char* product_id, 
         const char* actions_json)
@@ -340,19 +350,20 @@ evrythng_return_t evrythng_publish_product_actions(
 }
 
 
-evrythng_return_t evrythng_subscribe_action(
+evrythng_return_t EvrythngSubAction(
         evrythng_handle_t handle, 
         const char* action_name, 
+        int pub_states,
         sub_callback *callback)
 {
     if (!action_name)
         return EVRYTHNG_BAD_ARGS;
 
-    return evrythng_subscribe(handle, "actions", NULL, NULL, action_name, callback);
+    return evrythng_subscribe(handle, "actions", NULL, NULL, action_name, pub_states, callback);
 }
 
 
-evrythng_return_t evrythng_unsubscribe_action(
+evrythng_return_t EvrythngUnsubAction(
         evrythng_handle_t handle, 
         const char* action_name)
 {
@@ -363,22 +374,22 @@ evrythng_return_t evrythng_unsubscribe_action(
 }
 
 
-evrythng_return_t evrythng_subscribe_actions(evrythng_handle_t handle, sub_callback *callback)
+evrythng_return_t EvrythngSubActions(evrythng_handle_t handle, int pub_states, sub_callback *callback)
 {
     if (!callback)
         return EVRYTHNG_BAD_ARGS;
 
-    return evrythng_subscribe(handle, "actions", NULL, NULL, "all", callback);
+    return evrythng_subscribe(handle, "actions", NULL, NULL, "all", pub_states, callback);
 }
 
 
-evrythng_return_t evrythng_unsubscribe_actions(evrythng_handle_t handle)
+evrythng_return_t EvrythngUnsubActions(evrythng_handle_t handle)
 {
     return evrythng_unsubscribe(handle, "actions", NULL, NULL, "all");
 }
 
 
-evrythng_return_t evrythng_publish_action(
+evrythng_return_t EvrythngPubAction(
         evrythng_handle_t handle, 
         const char* action_name, 
         const char* action_json)
@@ -390,7 +401,7 @@ evrythng_return_t evrythng_publish_action(
 }
 
 
-evrythng_return_t evrythng_publish_actions(
+evrythng_return_t EvrythngPubActions(
         evrythng_handle_t handle, 
         const char* actions_json)
 {

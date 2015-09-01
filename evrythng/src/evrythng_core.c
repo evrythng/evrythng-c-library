@@ -88,7 +88,7 @@ static void evrythng_log(evrythng_handle_t handle, evrythng_log_level_t level, c
 #define error(fmt, ...) evrythng_log(handle, EVRYTHNG_LOG_ERROR, fmt,  ##__VA_ARGS__);
 
 
-evrythng_return_t evrythng_init_handle(evrythng_handle_t* handle)
+evrythng_return_t EvrythngInitHandle(evrythng_handle_t* handle)
 {
     if (!handle) 
         return EVRYTHNG_BAD_ARGS;
@@ -130,10 +130,10 @@ evrythng_return_t evrythng_init_handle(evrythng_handle_t* handle)
 }
 
 
-void evrythng_destroy_handle(evrythng_handle_t handle)
+void EvrythngDestroyHandle(evrythng_handle_t handle)
 {
     if (!handle) return;
-    if (handle->initialized && MQTTisConnected(&handle->mqtt_client)) evrythng_disconnect(handle);
+    if (handle->initialized && MQTTisConnected(&handle->mqtt_client)) EvrythngDisconnect(handle);
 
     if (handle->initialized)
     {
@@ -181,7 +181,7 @@ static int replace_str(char** dest, const char* src, size_t size)
 }
 
 
-evrythng_return_t evrythng_set_url(evrythng_handle_t handle, const char* url)
+evrythng_return_t EvrythngSetUrl(evrythng_handle_t handle, const char* url)
 {
     if (!handle || !url)
         return EVRYTHNG_BAD_ARGS;
@@ -219,7 +219,7 @@ evrythng_return_t evrythng_set_url(evrythng_handle_t handle, const char* url)
 }
 
 
-evrythng_return_t evrythng_set_key(evrythng_handle_t handle, const char* key)
+evrythng_return_t EvrythngSetKey(evrythng_handle_t handle, const char* key)
 {
     if (!handle || !key)
         return EVRYTHNG_BAD_ARGS;
@@ -229,7 +229,7 @@ evrythng_return_t evrythng_set_key(evrythng_handle_t handle, const char* key)
 }
 
 
-evrythng_return_t evrythng_set_client_id(evrythng_handle_t handle, const char* client_id)
+evrythng_return_t EvrythngSetClientId(evrythng_handle_t handle, const char* client_id)
 {
     if (!handle || !client_id)
         return EVRYTHNG_BAD_ARGS;
@@ -239,7 +239,7 @@ evrythng_return_t evrythng_set_client_id(evrythng_handle_t handle, const char* c
 }
 
 
-evrythng_return_t evrythng_set_log_callback(evrythng_handle_t handle, evrythng_log_callback callback)
+evrythng_return_t EvrythngSetLogCallback(evrythng_handle_t handle, evrythng_log_callback callback)
 {
     if (!handle)
         return EVRYTHNG_BAD_ARGS;
@@ -250,7 +250,7 @@ evrythng_return_t evrythng_set_log_callback(evrythng_handle_t handle, evrythng_l
 }
 
 
-evrythng_return_t evrythng_set_callbacks(evrythng_handle_t handle, evrythng_callback on_connection_lost,  evrythng_callback on_connection_restored)
+evrythng_return_t EvrythngSetConnectionCallbacks(evrythng_handle_t handle, evrythng_callback on_connection_lost,  evrythng_callback on_connection_restored)
 {
     if (!handle) return EVRYTHNG_BAD_ARGS;
 
@@ -261,7 +261,7 @@ evrythng_return_t evrythng_set_callbacks(evrythng_handle_t handle, evrythng_call
 }
 
 
-evrythng_return_t evrythng_set_qos(evrythng_handle_t handle, int qos)
+evrythng_return_t EvrythngSetQos(evrythng_handle_t handle, int qos)
 {
     if (!handle || qos < 0 || qos > 2)
         return EVRYTHNG_BAD_ARGS;
@@ -272,7 +272,7 @@ evrythng_return_t evrythng_set_qos(evrythng_handle_t handle, int qos)
 }
 
 
-evrythng_return_t evrythng_set_thread_priority(evrythng_handle_t handle, int priority)
+evrythng_return_t EvrythngSetThreadPriority(evrythng_handle_t handle, int priority)
 {
     if (!handle || priority < 0)
         return EVRYTHNG_BAD_ARGS;
@@ -283,7 +283,7 @@ evrythng_return_t evrythng_set_thread_priority(evrythng_handle_t handle, int pri
 }
 
 
-evrythng_return_t evrythng_set_thread_stacksize(evrythng_handle_t handle, int stacksize)
+evrythng_return_t EvrythngSetThreadStacksize(evrythng_handle_t handle, int stacksize)
 {
     if (!handle || stacksize < 1024)
         return EVRYTHNG_BAD_ARGS;
@@ -410,7 +410,7 @@ static evrythng_return_t evrythng_async_op(evrythng_handle_t handle, int op, con
 }
 
 
-evrythng_return_t evrythng_connect(evrythng_handle_t handle)
+evrythng_return_t EvrythngConnect(evrythng_handle_t handle)
 {
     if (!handle)
         return EVRYTHNG_BAD_ARGS;
@@ -512,7 +512,7 @@ evrythng_return_t evrythng_connect_internal(evrythng_handle_t handle)
 }
 
 
-evrythng_return_t evrythng_disconnect(evrythng_handle_t handle)
+evrythng_return_t EvrythngDisconnect(evrythng_handle_t handle)
 {
     if (!handle)
         return EVRYTHNG_BAD_ARGS;
@@ -629,6 +629,7 @@ evrythng_return_t evrythng_subscribe(
         const char* entity_id, 
         const char* data_type, 
         const char* data_name, 
+        int pub_states,
         sub_callback *callback)
 {
     if (!MQTTisConnected(&handle->mqtt_client)) 
@@ -642,7 +643,7 @@ evrythng_return_t evrythng_subscribe(
 
     if (entity_id == NULL) 
     {
-        rc = snprintf(sub_topic, TOPIC_MAX_LEN, "%s/%s", entity, data_name);
+        rc = snprintf(sub_topic, TOPIC_MAX_LEN, "%s/%s?pubStates=%d", entity, data_name, pub_states);
         if (rc < 0 || rc >= TOPIC_MAX_LEN) 
         {
             debug("topic overflow");
@@ -651,7 +652,7 @@ evrythng_return_t evrythng_subscribe(
     } 
     else if (data_name == NULL) 
     {
-        rc = snprintf(sub_topic, TOPIC_MAX_LEN, "%s/%s/%s", entity, entity_id, data_type);
+        rc = snprintf(sub_topic, TOPIC_MAX_LEN, "%s/%s/%s?pubStates=%d", entity, entity_id, data_type, pub_states);
         if (rc < 0 || rc >= TOPIC_MAX_LEN) 
         {
             debug("topic overflow");
@@ -660,7 +661,7 @@ evrythng_return_t evrythng_subscribe(
     } 
     else 
     {
-        rc = snprintf(sub_topic, TOPIC_MAX_LEN, "%s/%s/%s/%s", entity, entity_id, data_type, data_name);
+        rc = snprintf(sub_topic, TOPIC_MAX_LEN, "%s/%s/%s/%s?pubStates=%d", entity, entity_id, data_type, data_name, pub_states);
         if (rc < 0 || rc >= TOPIC_MAX_LEN) 
         {
             debug("topic overflow");

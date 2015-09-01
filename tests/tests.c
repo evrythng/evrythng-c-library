@@ -66,12 +66,12 @@ void log_callback(evrythng_log_level_t level, const char* fmt, va_list vl)
     PRINT_START_MEM_STATS \
     evrythng_handle_t h1;\
     common_tcp_init_handle(&h1);\
-    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, evrythng_connect(h1));
+    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, EvrythngConnect(h1));
 
 #define END_SINGLE_CONNECTION \
     CuAssertIntEquals(tc, 0, SemaphoreWait(&sub_sem, 5000));\
-    evrythng_disconnect(h1);\
-    evrythng_destroy_handle(h1);\
+    EvrythngDisconnect(h1);\
+    EvrythngDestroyHandle(h1);\
     PRINT_END_MEM_STATS
 
 
@@ -95,98 +95,98 @@ void log_callback(evrythng_log_level_t level, const char* fmt, va_list vl)
 void test_init_handle_ok(CuTest* tc)
 {
     evrythng_handle_t h;
-    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, evrythng_init_handle(&h));
-    evrythng_destroy_handle(h);
+    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, EvrythngInitHandle(&h));
+    EvrythngDestroyHandle(h);
 }
 
 void test_init_handle_fail(CuTest* tc)
 {
-    CuAssertIntEquals(tc, EVRYTHNG_BAD_ARGS, evrythng_init_handle(0));
+    CuAssertIntEquals(tc, EVRYTHNG_BAD_ARGS, EvrythngInitHandle(0));
 }
 
 void test_set_url_ok(CuTest* tc)
 {
     evrythng_handle_t h;
-    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, evrythng_init_handle(&h));
-    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, evrythng_set_url(h, "tcp://localhost:666"));
-    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, evrythng_set_url(h, "ssl://localhost:666"));
-    evrythng_destroy_handle(h);
+    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, EvrythngInitHandle(&h));
+    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, EvrythngSetUrl(h, "tcp://localhost:666"));
+    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, EvrythngSetUrl(h, "ssl://localhost:666"));
+    EvrythngDestroyHandle(h);
 }
 
 void test_set_url_fail(CuTest* tc)
 {
     evrythng_handle_t h;
-    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, evrythng_init_handle(&h));
-    CuAssertIntEquals(tc, EVRYTHNG_BAD_ARGS, evrythng_set_url(h, 0));
-    CuAssertIntEquals(tc, EVRYTHNG_BAD_URL, evrythng_set_url(h, "ttt://localhost:666"));
-    evrythng_destroy_handle(h);
+    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, EvrythngInitHandle(&h));
+    CuAssertIntEquals(tc, EVRYTHNG_BAD_ARGS, EvrythngSetUrl(h, 0));
+    CuAssertIntEquals(tc, EVRYTHNG_BAD_URL, EvrythngSetUrl(h, "ttt://localhost:666"));
+    EvrythngDestroyHandle(h);
 }
 
 void test_set_key_ok(CuTest* tc)
 {
     evrythng_handle_t h;
-    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, evrythng_init_handle(&h));
-    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, evrythng_set_key(h, "123456789"));
-    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, evrythng_set_key(h, "123456789123456789"));
-    evrythng_destroy_handle(h);
+    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, EvrythngInitHandle(&h));
+    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, EvrythngSetKey(h, "123456789"));
+    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, EvrythngSetKey(h, "123456789123456789"));
+    EvrythngDestroyHandle(h);
 }
 
 void test_set_client_id_ok(CuTest* tc)
 {
     evrythng_handle_t h;
-    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, evrythng_init_handle(&h));
-    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, evrythng_set_client_id(h, "123456789"));
-    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, evrythng_set_client_id(h, "123456789123456789"));
-    evrythng_destroy_handle(h);
+    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, EvrythngInitHandle(&h));
+    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, EvrythngSetClientId(h, "123456789"));
+    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, EvrythngSetClientId(h, "123456789123456789"));
+    EvrythngDestroyHandle(h);
 }
 
 void test_set_qos_ok(CuTest* tc)
 {
     evrythng_handle_t h;
-    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, evrythng_init_handle(&h));
-    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, evrythng_set_qos(h, 0));
-    evrythng_destroy_handle(h);
+    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, EvrythngInitHandle(&h));
+    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, EvrythngSetQos(h, 0));
+    EvrythngDestroyHandle(h);
 }
 
 void test_set_qos_fail(CuTest* tc)
 {
     evrythng_handle_t h;
-    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, evrythng_init_handle(&h));
-    CuAssertIntEquals(tc, EVRYTHNG_BAD_ARGS, evrythng_set_qos(h, 8));
-    evrythng_destroy_handle(h);
+    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, EvrythngInitHandle(&h));
+    CuAssertIntEquals(tc, EVRYTHNG_BAD_ARGS, EvrythngSetQos(h, 8));
+    EvrythngDestroyHandle(h);
 }
 
 void test_set_callback_ok(CuTest* tc)
 {
     evrythng_handle_t h;
-    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, evrythng_init_handle(&h));
-    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, evrythng_set_log_callback(h, log_callback));
-    evrythng_destroy_handle(h);
+    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, EvrythngInitHandle(&h));
+    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, EvrythngSetLogCallback(h, log_callback));
+    EvrythngDestroyHandle(h);
 }
 
 void test_set_callback_fail(CuTest* tc)
 {
     evrythng_handle_t h;
-    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, evrythng_init_handle(&h));
-    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, evrythng_set_log_callback(h, 0));
-    evrythng_destroy_handle(h);
+    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, EvrythngInitHandle(&h));
+    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, EvrythngSetLogCallback(h, 0));
+    EvrythngDestroyHandle(h);
 }
 
 static void common_tcp_init_handle(evrythng_handle_t* h)
 {
-    evrythng_init_handle(h);
-    evrythng_set_url(*h, MQTT_URL);
-    evrythng_set_log_callback(*h, log_callback);
-    evrythng_set_callbacks(*h, on_connection_lost, on_connection_restored);
-    evrythng_set_key(*h, DEVICE_API_KEY);
+    EvrythngInitHandle(h);
+    EvrythngSetUrl(*h, MQTT_URL);
+    EvrythngSetLogCallback(*h, log_callback);
+    EvrythngSetConnectionCallbacks(*h, on_connection_lost, on_connection_restored);
+    EvrythngSetKey(*h, DEVICE_API_KEY);
 }
 
 void test_tcp_connect_ok1(CuTest* tc)
 {
     evrythng_handle_t h;
     common_tcp_init_handle(&h);
-    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, evrythng_disconnect(h));
-    evrythng_destroy_handle(h);
+    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, EvrythngDisconnect(h));
+    EvrythngDestroyHandle(h);
 }
 
 void test_tcp_connect_ok2(CuTest* tc)
@@ -194,9 +194,9 @@ void test_tcp_connect_ok2(CuTest* tc)
     PRINT_START_MEM_STATS 
     evrythng_handle_t h1;
     common_tcp_init_handle(&h1);
-    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, evrythng_connect(h1));
-    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, evrythng_disconnect(h1));
-    evrythng_destroy_handle(h1);
+    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, EvrythngConnect(h1));
+    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, EvrythngDisconnect(h1));
+    EvrythngDestroyHandle(h1);
     PRINT_END_MEM_STATS
 }
 
@@ -214,25 +214,25 @@ void test_subunsub_thng(CuTest* tc)
     evrythng_handle_t h1;
     common_tcp_init_handle(&h1);
 
-    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, evrythng_connect(h1));
+    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, EvrythngConnect(h1));
 
-    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, evrythng_subscribe_thng_action(h1, THNG_1, ACTION_1, test_sub_callback));
-    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, evrythng_subscribe_thng_action(h1, THNG_1, ACTION_2, test_sub_callback));
-    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, evrythng_unsubscribe_thng_action(h1, THNG_1, ACTION_2));
-    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, evrythng_subscribe_thng_property(h1, THNG_1, PROPERTY_1, test_sub_callback));
-    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, evrythng_unsubscribe_thng_property(h1, THNG_1, PROPERTY_1));
-    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, evrythng_subscribe_thng_property(h1, THNG_1, PROPERTY_1, test_sub_callback));
-    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, evrythng_subscribe_thng_property(h1, THNG_1, PROPERTY_2, test_sub_callback));
-    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, evrythng_unsubscribe_thng_property(h1, THNG_1, PROPERTY_1));
-    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, evrythng_subscribe_thng_properties(h1, THNG_1, test_sub_callback));
-    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, evrythng_unsubscribe_thng_properties(h1, THNG_1));
-    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, evrythng_subscribe_thng_actions(h1, THNG_1, test_sub_callback));
-    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, evrythng_unsubscribe_thng_actions(h1, THNG_1));
-    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, evrythng_subscribe_thng_location(h1, THNG_1, test_sub_callback));
-    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, evrythng_unsubscribe_thng_location(h1, THNG_1));
+    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, EvrythngSubThngAction(h1, THNG_1, ACTION_1, 0, test_sub_callback));
+    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, EvrythngSubThngAction(h1, THNG_1, ACTION_2, 0, test_sub_callback));
+    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, EvrythngUnsubThngAction(h1, THNG_1, ACTION_2));
+    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, EvrythngSubThngProperty(h1, THNG_1, PROPERTY_1, 0, test_sub_callback));
+    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, EvrythngUnsubThngProperty(h1, THNG_1, PROPERTY_1));
+    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, EvrythngSubThngProperty(h1, THNG_1, PROPERTY_1, 0, test_sub_callback));
+    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, EvrythngSubThngProperty(h1, THNG_1, PROPERTY_2, 0, test_sub_callback));
+    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, EvrythngUnsubThngProperty(h1, THNG_1, PROPERTY_1));
+    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, EvrythngSubThngProperties(h1, THNG_1, 0, test_sub_callback));
+    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, EvrythngUnsubThngProperties(h1, THNG_1));
+    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, EvrythngSubThngActions(h1, THNG_1, 0, test_sub_callback));
+    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, EvrythngUnsubThngActions(h1, THNG_1));
+    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, EvrythngSubThngLocation(h1, THNG_1, 0, test_sub_callback));
+    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, EvrythngUnsubThngLocation(h1, THNG_1));
 
-    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, evrythng_disconnect(h1));
-    evrythng_destroy_handle(h1);
+    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, EvrythngDisconnect(h1));
+    EvrythngDestroyHandle(h1);
     PRINT_END_MEM_STATS
 }
 
@@ -241,113 +241,113 @@ void test_subunsub_prod(CuTest* tc)
     PRINT_START_MEM_STATS 
     evrythng_handle_t h1;
     common_tcp_init_handle(&h1);
-    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, evrythng_connect(h1));
+    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, EvrythngConnect(h1));
 
-    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, evrythng_subscribe_product_property(h1, PRODUCT_1, PROPERTY_1, test_sub_callback));
-    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, evrythng_subscribe_product_property(h1, PRODUCT_1, PROPERTY_2, test_sub_callback));
-    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, evrythng_unsubscribe_product_property(h1, PRODUCT_1, PROPERTY_1));
-    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, evrythng_unsubscribe_product_property(h1, PRODUCT_1, PROPERTY_2));
-    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, evrythng_subscribe_product_properties(h1, PRODUCT_1, test_sub_callback));
-    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, evrythng_unsubscribe_product_properties(h1, PRODUCT_1));
-    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, evrythng_subscribe_product_action(h1, PRODUCT_1, ACTION_1, test_sub_callback));
-    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, evrythng_subscribe_product_action(h1, PRODUCT_1, ACTION_2, test_sub_callback));
-    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, evrythng_unsubscribe_product_action(h1, PRODUCT_1, ACTION_2));
-    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, evrythng_subscribe_product_actions(h1, PRODUCT_1, test_sub_callback));
-    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, evrythng_unsubscribe_product_actions(h1, PRODUCT_1));
-    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, evrythng_subscribe_action(h1, ACTION_1, test_sub_callback));
-    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, evrythng_subscribe_action(h1, ACTION_2, test_sub_callback));
-    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, evrythng_unsubscribe_action(h1, ACTION_2));
+    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, EvrythngSubProductProperty(h1, PRODUCT_1, PROPERTY_1, 0, test_sub_callback));
+    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, EvrythngSubProductProperty(h1, PRODUCT_1, PROPERTY_2, 0, test_sub_callback));
+    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, EvrythngUnsubProductProperty(h1, PRODUCT_1, PROPERTY_1));
+    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, EvrythngUnsubProductProperty(h1, PRODUCT_1, PROPERTY_2));
+    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, EvrythngSubProductProperties(h1, PRODUCT_1, 0, test_sub_callback));
+    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, EvrythngUnsubProductProperties(h1, PRODUCT_1));
+    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, EvrythngSubProductAction(h1, PRODUCT_1, ACTION_1, 0, test_sub_callback));
+    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, EvrythngSubProductAction(h1, PRODUCT_1, ACTION_2, 0, test_sub_callback));
+    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, EvrythngUnsubProductAction(h1, PRODUCT_1, ACTION_2));
+    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, EvrythngSubProductActions(h1, PRODUCT_1, 0, test_sub_callback));
+    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, EvrythngUnsubProductActions(h1, PRODUCT_1));
+    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, EvrythngSubAction(h1, ACTION_1, 0, test_sub_callback));
+    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, EvrythngSubAction(h1, ACTION_2, 0, test_sub_callback));
+    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, EvrythngUnsubAction(h1, ACTION_2));
 
-    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, evrythng_disconnect(h1));
-    evrythng_destroy_handle(h1);
+    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, EvrythngDisconnect(h1));
+    EvrythngDestroyHandle(h1);
     PRINT_END_MEM_STATS
 }
 
 void test_pubsub_thng_prop(CuTest* tc)
 {
     START_SINGLE_CONNECTION
-    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, evrythng_subscribe_thng_property(h1, THNG_1, PROPERTY_1, test_sub_callback));
-    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, evrythng_publish_thng_property(h1, THNG_1, PROPERTY_1, PROPERTY_VALUE_JSON));
+    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, EvrythngSubThngProperty(h1, THNG_1, PROPERTY_1, 0, test_sub_callback));
+    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, EvrythngPubThngProperty(h1, THNG_1, PROPERTY_1, PROPERTY_VALUE_JSON));
     END_SINGLE_CONNECTION
 }
 
 void test_pubsuball_thng_prop(CuTest* tc)
 {
     START_SINGLE_CONNECTION
-    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, evrythng_subscribe_thng_properties(h1, THNG_1, test_sub_callback));
-    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, evrythng_publish_thng_properties(h1, THNG_1, PROPERTIES_VALUE_JSON));
+    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, EvrythngSubThngProperties(h1, THNG_1, 0, test_sub_callback));
+    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, EvrythngPubThngProperties(h1, THNG_1, PROPERTIES_VALUE_JSON));
     END_SINGLE_CONNECTION
 }
 
 void test_pubsub_thng_action(CuTest* tc)
 {
     START_SINGLE_CONNECTION
-    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, evrythng_subscribe_thng_action(h1, THNG_1, ACTION_1, test_sub_callback));
-    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, evrythng_publish_thng_action(h1, THNG_1, ACTION_1, ACTION_JSON));
+    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, EvrythngSubThngAction(h1, THNG_1, ACTION_1, 0, test_sub_callback));
+    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, EvrythngPubThngAction(h1, THNG_1, ACTION_1, ACTION_JSON));
     END_SINGLE_CONNECTION
 }
 
 void test_pubsuball_thng_actions(CuTest* tc)
 {
     START_SINGLE_CONNECTION
-    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, evrythng_subscribe_thng_actions(h1, THNG_1, test_sub_callback));
-    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, evrythng_publish_thng_actions(h1, THNG_1, ACTION_JSON));
+    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, EvrythngSubThngActions(h1, THNG_1, 0, test_sub_callback));
+    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, EvrythngPubThngActions(h1, THNG_1, ACTION_JSON));
     END_SINGLE_CONNECTION
 }
 
 void test_pubsub_thng_location(CuTest* tc)
 {
     START_SINGLE_CONNECTION
-    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, evrythng_subscribe_thng_location(h1, THNG_1, test_sub_callback));
-    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, evrythng_publish_thng_location(h1, THNG_1, LOCATION_JSON));
+    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, EvrythngSubThngLocation(h1, THNG_1, 0, test_sub_callback));
+    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, EvrythngPubThngLocation(h1, THNG_1, LOCATION_JSON));
     END_SINGLE_CONNECTION
 }
 
 void test_pubsub_prod_prop(CuTest* tc)
 {
     START_SINGLE_CONNECTION
-    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, evrythng_subscribe_product_property(h1, PRODUCT_1, PROPERTY_1, test_sub_callback));
-    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, evrythng_publish_product_property(h1, PRODUCT_1, PROPERTY_1, PROPERTY_VALUE_JSON));
+    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, EvrythngSubProductProperty(h1, PRODUCT_1, PROPERTY_1, 0, test_sub_callback));
+    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, EvrythngPubProductProperty(h1, PRODUCT_1, PROPERTY_1, PROPERTY_VALUE_JSON));
     END_SINGLE_CONNECTION
 }
 
 void test_pubsuball_prod_prop(CuTest* tc)
 {
     START_SINGLE_CONNECTION
-    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, evrythng_subscribe_product_properties(h1, PRODUCT_1, test_sub_callback));
-    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, evrythng_publish_product_properties(h1, PRODUCT_1, PROPERTIES_VALUE_JSON));
+    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, EvrythngSubProductProperties(h1, PRODUCT_1, 0, test_sub_callback));
+    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, EvrythngPubProductProperties(h1, PRODUCT_1, PROPERTIES_VALUE_JSON));
     END_SINGLE_CONNECTION
 }
 
 void test_pubsub_prod_action(CuTest* tc)
 {
     START_SINGLE_CONNECTION
-    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, evrythng_subscribe_product_action(h1, PRODUCT_1, ACTION_1, test_sub_callback));
-    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, evrythng_publish_product_action(h1, PRODUCT_1, ACTION_1, ACTION_JSON));
+    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, EvrythngSubProductAction(h1, PRODUCT_1, ACTION_1, 0, test_sub_callback));
+    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, EvrythngPubProductAction(h1, PRODUCT_1, ACTION_1, ACTION_JSON));
     END_SINGLE_CONNECTION
 }
 
 void test_pubsuball_prod_actions(CuTest* tc)
 {
     START_SINGLE_CONNECTION
-    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, evrythng_subscribe_product_actions(h1, PRODUCT_1, test_sub_callback));
-    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, evrythng_publish_product_actions(h1, PRODUCT_1, ACTION_JSON));
+    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, EvrythngSubProductActions(h1, PRODUCT_1, 0, test_sub_callback));
+    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, EvrythngPubProductActions(h1, PRODUCT_1, ACTION_JSON));
     END_SINGLE_CONNECTION
 }
 
 void test_pubsub_action(CuTest* tc)
 {
     START_SINGLE_CONNECTION
-    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, evrythng_subscribe_action(h1, ACTION_1, test_sub_callback));
-    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, evrythng_publish_action(h1, ACTION_1, ACTION_JSON));
+    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, EvrythngSubAction(h1, ACTION_1, 0, test_sub_callback));
+    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, EvrythngPubAction(h1, ACTION_1, ACTION_JSON));
     END_SINGLE_CONNECTION
 }
 
 void test_pubsuball_actions(CuTest* tc)
 {
     START_SINGLE_CONNECTION
-    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, evrythng_subscribe_actions(h1, test_sub_callback));
-    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, evrythng_publish_actions(h1, ACTION_JSON));
+    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, EvrythngSubActions(h1, 0, test_sub_callback));
+    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, EvrythngPubActions(h1, ACTION_JSON));
     END_SINGLE_CONNECTION
 }
 
