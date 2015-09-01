@@ -10,6 +10,7 @@
 #include <string.h>
 
 #include "evrythng.h"
+#include "evrythng_platform.h"
 
 #define log(_fmt_, ...) printf(_fmt_"\n\r", ##__VA_ARGS__)
 
@@ -122,28 +123,31 @@ int main(int argc, char *argv[])
         }
     }
 
-    if (opts.sub && opts.pub) {
+    if (opts.sub && opts.pub) 
+    {
         log("use --sub or --pub option, not both");
         exit(EXIT_FAILURE);
     }
 
-    if (!opts.sub && !opts.pub) {
+    if (!opts.sub && !opts.pub) 
+    {
         log("use --sub or --pub option");
         exit(EXIT_FAILURE);
     }
 
-    if (!opts.url || !opts.key || !opts.thng || !opts.prop) {
+    if (!opts.url || !opts.key || !opts.thng || !opts.prop) 
+    {
         print_usage();
         exit(EXIT_FAILURE);
     }
 
-    evrythng_init_handle(&opts.evt_handle);
-    evrythng_set_log_callback(opts.evt_handle, log_callback);
-    evrythng_set_callbacks(opts.evt_handle, on_connection_lost, on_connection_restored);
-    evrythng_set_url(opts.evt_handle, opts.url);
-    evrythng_set_key(opts.evt_handle, opts.key);
+    EvrythngInitHandle(&opts.evt_handle);
+    EvrythngSetLogCallback(opts.evt_handle, log_callback);
+    EvrythngSetConnectionCallbacks(opts.evt_handle, on_connection_lost, on_connection_restored);
+    EvrythngSetUrl(opts.evt_handle, opts.url);
+    EvrythngSetKey(opts.evt_handle, opts.key);
 
-    while (evrythng_connect(opts.evt_handle) != EVRYTHNG_SUCCESS)
+    while (EvrythngConnect(opts.evt_handle) != EVRYTHNG_SUCCESS)
     {
         log("Retrying");
         platform_sleep(3000);
@@ -151,7 +155,7 @@ int main(int argc, char *argv[])
 
     if (opts.sub) 
     {
-        evrythng_subscribe_thng_property(opts.evt_handle, opts.thng, opts.prop, print_property_callback);
+        EvrythngSubThngProperty(opts.evt_handle, opts.thng, opts.prop, 1, print_property_callback);
         while(1) platform_sleep(1000);
  
     } 
@@ -163,7 +167,7 @@ int main(int argc, char *argv[])
             char msg[128];
             sprintf(msg, "[{\"value\": %d}]", value);
             log("Publishing value %d to property %s", value, opts.prop);
-            evrythng_publish_thng_property(opts.evt_handle, opts.thng, opts.prop, msg);
+            EvrythngPubThngProperty(opts.evt_handle, opts.thng, opts.prop, msg);
             platform_sleep(2000);
         }
     }

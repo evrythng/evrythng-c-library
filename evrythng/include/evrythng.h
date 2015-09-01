@@ -27,7 +27,6 @@
 
 #include <stdlib.h>
 #include <stdarg.h>
-#include "evrythng_platform.h"
 
 
 typedef enum _evrythng_return_t 
@@ -90,7 +89,7 @@ typedef void sub_callback(const char* str_json, size_t length);
  *            \b EVRYTHNG_MEMORY_ERROR if an error occured while allocating memory \n
  *            \b EVRYTHNG_SUCCESS      on success \n
  */
-evrythng_return_t evrythng_init_handle(evrythng_handle_t* handle);
+evrythng_return_t EvrythngInitHandle(evrythng_handle_t* handle);
 
 
 /** @brief Destroy context.
@@ -101,7 +100,7 @@ evrythng_return_t evrythng_init_handle(evrythng_handle_t* handle);
  *
  * @return void
  */
-void evrythng_destroy_handle(evrythng_handle_t handle);
+void EvrythngDestroyHandle(evrythng_handle_t handle);
 
 
 /** @brief Set URL to connect to.
@@ -117,7 +116,7 @@ void evrythng_destroy_handle(evrythng_handle_t handle);
  *            \b EVRYTHNG_MEMORY_ERROR if an error occured while allocating memory \n
  *            \b EVRYTHNG_SUCCESS      on success \n
  */
-evrythng_return_t evrythng_set_url(evrythng_handle_t handle, const char* url);
+evrythng_return_t EvrythngSetUrl(evrythng_handle_t handle, const char* url);
 
 
 /** @brief Set API key to use for connecting to the cloud.
@@ -131,7 +130,7 @@ evrythng_return_t evrythng_set_url(evrythng_handle_t handle, const char* url);
  *            \b EVRYTHNG_MEMORY_ERROR if an error occured while allocating memory \n
  *            \b EVRYTHNG_SUCCESS      on success \n
  */
-evrythng_return_t evrythng_set_key(evrythng_handle_t handle, const char* key);
+evrythng_return_t EvrythngSetKey(evrythng_handle_t handle, const char* key);
 
 
 /** @brief Set client id to use for connecting to the cloud.
@@ -146,7 +145,7 @@ evrythng_return_t evrythng_set_key(evrythng_handle_t handle, const char* key);
  *            \b EVRYTHNG_MEMORY_ERROR if an error occured while allocating memory \n
  *            \b EVRYTHNG_SUCCESS      on success \n
  */
-evrythng_return_t evrythng_set_client_id(evrythng_handle_t handle, const char* client_id);
+evrythng_return_t EvrythngSetClientId(evrythng_handle_t handle, const char* client_id);
 
 
 /** @brief Set QoS to use for this connection.
@@ -161,7 +160,7 @@ evrythng_return_t evrythng_set_client_id(evrythng_handle_t handle, const char* c
  * @return    \b EVRYTHNG_BAD_ARGS     if handle is a null pointer or QoS is > 2 or < 0 \n
  *            \b EVRYTHNG_SUCCESS      on success \n
  */
-evrythng_return_t evrythng_set_qos(evrythng_handle_t handle, int qos);
+evrythng_return_t EvrythngSetQos(evrythng_handle_t handle, int qos);
 
 
 /** @brief Set log callback
@@ -177,20 +176,21 @@ evrythng_return_t evrythng_set_qos(evrythng_handle_t handle, int qos);
  * @return    \b EVRYTHNG_BAD_ARGS     if handle or callback is a null pointer \n
  *            \b EVRYTHNG_SUCCESS      on success \n
  */
-evrythng_return_t evrythng_set_log_callback(evrythng_handle_t handle, evrythng_log_callback callback);
+evrythng_return_t EvrythngSetLogCallback(evrythng_handle_t handle, evrythng_log_callback callback);
 
 
-/** @brief Set callback on connection lost
+/** @brief Set callback on connection lost/restored
  *
  * Use this function to set callback that will be called on connection lost.
  *
  * @param[in] handle A pointer to context handle.
- * @param[in] callback A pointer to log callback.
+ * @param[in] on_connection_lost A pointer to callback to call when connection is lost.
+ * @param[in] on_connection_restored A pointer to callback to call when connection is restored.
  *
  * @return    \b EVRYTHNG_BAD_ARGS     if handle or callback is a null pointer \n
  *            \b EVRYTHNG_SUCCESS      on success \n
  */
-evrythng_return_t evrythng_set_callbacks(evrythng_handle_t handle, 
+evrythng_return_t EvrythngSetConnectionCallbacks(evrythng_handle_t handle, 
         evrythng_callback on_connection_lost, evrythng_callback on_connection_restored);
 
 
@@ -205,7 +205,7 @@ evrythng_return_t evrythng_set_callbacks(evrythng_handle_t handle,
  * @return    \b EVRYTHNG_BAD_ARGS     if handle is a null pointer or priority is < 0 \n
  *            \b EVRYTHNG_SUCCESS      on success \n
  */
-evrythng_return_t evrythng_set_thread_priority(evrythng_handle_t handle, int priority);
+evrythng_return_t EvrythngSetThreadPriority(evrythng_handle_t handle, int priority);
 
 
 /** @brief Set internal thread stack size.
@@ -219,7 +219,7 @@ evrythng_return_t evrythng_set_thread_priority(evrythng_handle_t handle, int pri
  * @return    \b EVRYTHNG_BAD_ARGS     if handle is a null pointer or stack size is < 1024 \n
  *            \b EVRYTHNG_SUCCESS      on success \n
  */
-evrythng_return_t evrythng_set_thread_stacksize(evrythng_handle_t handle, int stacksize);
+evrythng_return_t EvrythngSetThreadStacksize(evrythng_handle_t handle, int stacksize);
 
 
 /** @brief Connect to Evrythng cloud.
@@ -236,7 +236,7 @@ evrythng_return_t evrythng_set_thread_stacksize(evrythng_handle_t handle, int st
  *            \b EVRYTHNG_CONNECTION_FAILED if could not establish connection to the cloud \n
  *            \b EVRYTHNG_SUCCESS      on success \n
  */
-evrythng_return_t evrythng_connect(evrythng_handle_t handle);
+evrythng_return_t EvrythngConnect(evrythng_handle_t handle);
 
 
 /** @brief Disconnect from Evrythng cloud.
@@ -250,7 +250,7 @@ evrythng_return_t evrythng_connect(evrythng_handle_t handle);
  *            \b EVRYTHNG_FAILURE if mqtt client creation/setup error occured \n
  *            \b EVRYTHNG_SUCCESS      on success \n
  */
-evrythng_return_t evrythng_disconnect(evrythng_handle_t handle);
+evrythng_return_t EvrythngDisconnect(evrythng_handle_t handle);
 
 
 /** @brief Publish a single property to a given thing.
@@ -268,7 +268,7 @@ evrythng_return_t evrythng_disconnect(evrythng_handle_t handle);
  *            \b EVRYTHNG_NOT_CONNECTED if internal context is not in connected state \n
  *            \b EVRYTHNG_SUCCESS on success \n
  */
-evrythng_return_t evrythng_publish_thng_property(
+evrythng_return_t EvrythngPubThngProperty(
         evrythng_handle_t handle, 
         const char* thng_id, 
         const char* property_name, 
@@ -282,6 +282,7 @@ evrythng_return_t evrythng_publish_thng_property(
  * @param[in] handle        A context handle.
  * @param[in] thng_id       A thing ID.
  * @param[in] property_name The name of the property. 
+ * @param[in] pub_states    The pubStates flag. 
  * @param[in] callback      A pointer to a subscribe callback function. 
  *
  * @return    \b EVRYTHNG_BAD_ARGS if one the arguments is a null pointer or a too long string \n
@@ -290,10 +291,11 @@ evrythng_return_t evrythng_publish_thng_property(
  *            \b EVRYTHNG_NOT_CONNECTED if internal context is not in connected state \n
  *            \b EVRYTHNG_SUCCESS on success \n
  */
-evrythng_return_t evrythng_subscribe_thng_property(
+evrythng_return_t EvrythngSubThngProperty(
         evrythng_handle_t handle, 
         const char* thng_id, 
         const char* property_name, 
+        int pub_states,
         sub_callback *callback);
 
 
@@ -310,7 +312,7 @@ evrythng_return_t evrythng_subscribe_thng_property(
  *            \b EVRYTHNG_NOT_CONNECTED if internal context is not in connected state \n
  *            \b EVRYTHNG_SUCCESS on success \n
  */
-evrythng_return_t evrythng_unsubscribe_thng_property(
+evrythng_return_t EvrythngUnsubThngProperty(
         evrythng_handle_t handle, 
         const char* thng_id, 
         const char* property_name);
@@ -323,6 +325,7 @@ evrythng_return_t evrythng_unsubscribe_thng_property(
  *
  * @param[in] handle   A context handle.
  * @param[in] thng_id  A thing ID. 
+ * @param[in] pub_states    The pubStates flag. 
  * @param[in] callback A pointer to a subscribe callback function. 
  *
  * @return    \b EVRYTHNG_BAD_ARGS if one the arguments is a null pointer or a too long string \n
@@ -331,9 +334,10 @@ evrythng_return_t evrythng_unsubscribe_thng_property(
  *            \b EVRYTHNG_NOT_CONNECTED if internal context is not in connected state \n
  *            \b EVRYTHNG_SUCCESS on success \n
  */
-evrythng_return_t evrythng_subscribe_thng_properties(
+evrythng_return_t EvrythngSubThngProperties(
         evrythng_handle_t handle, 
         const char* thng_id, 
+        int pub_states,
         sub_callback *callback);
 
 
@@ -349,7 +353,7 @@ evrythng_return_t evrythng_subscribe_thng_properties(
  *            \b EVRYTHNG_NOT_CONNECTED if internal context is not in connected state \n
  *            \b EVRYTHNG_SUCCESS on success \n
  */
-evrythng_return_t evrythng_unsubscribe_thng_properties(
+evrythng_return_t EvrythngUnsubThngProperties(
         evrythng_handle_t handle, 
         const char* thng_id);
 
@@ -368,7 +372,7 @@ evrythng_return_t evrythng_unsubscribe_thng_properties(
  *            \b EVRYTHNG_NOT_CONNECTED if internal context is not in connected state \n
  *            \b EVRYTHNG_SUCCESS on success \n
  */
-evrythng_return_t evrythng_publish_thng_properties(
+evrythng_return_t EvrythngPubThngProperties(
         evrythng_handle_t handle, 
         const char* thng_id, 
         const char* properties_json);
@@ -381,6 +385,7 @@ evrythng_return_t evrythng_publish_thng_properties(
  * @param[in] handle      A context handle.
  * @param[in] thng_id     A thing ID.
  * @param[in] action_name The name of an action. 
+ * @param[in] pub_states    The pubStates flag. 
  * @param[in] callback    A pointer to a subscribe callback function. 
  *
  * @return    \b EVRYTHNG_BAD_ARGS if one the arguments is a null pointer or a too long string \n
@@ -389,10 +394,11 @@ evrythng_return_t evrythng_publish_thng_properties(
  *            \b EVRYTHNG_NOT_CONNECTED if internal context is not in connected state \n
  *            \b EVRYTHNG_SUCCESS on success \n
  */
-evrythng_return_t evrythng_subscribe_thng_action(
+evrythng_return_t EvrythngSubThngAction(
         evrythng_handle_t handle, 
         const char* thng_id, 
         const char* action_name, 
+        int pub_states,
         sub_callback *callback);
 
 
@@ -409,7 +415,7 @@ evrythng_return_t evrythng_subscribe_thng_action(
  *            \b EVRYTHNG_NOT_CONNECTED if internal context is not in connected state \n
  *            \b EVRYTHNG_SUCCESS on success \n
  */
-evrythng_return_t evrythng_unsubscribe_thng_action(
+evrythng_return_t EvrythngUnsubThngAction(
         evrythng_handle_t handle, 
         const char* thng_id, 
         const char* action_name);
@@ -421,6 +427,7 @@ evrythng_return_t evrythng_unsubscribe_thng_action(
  *
  * @param[in] handle   A context handle.
  * @param[in] thng_id  A thing ID. 
+ * @param[in] pub_states The pubStates flag. 
  * @param[in] callback A pointer to a subscribe callback function. 
  *
  * @return    \b EVRYTHNG_BAD_ARGS if one the arguments is a null pointer or a too long string \n
@@ -429,9 +436,10 @@ evrythng_return_t evrythng_unsubscribe_thng_action(
  *            \b EVRYTHNG_NOT_CONNECTED if internal context is not in connected state \n
  *            \b EVRYTHNG_SUCCESS on success \n
  */
-evrythng_return_t evrythng_subscribe_thng_actions(
+evrythng_return_t EvrythngSubThngActions(
         evrythng_handle_t handle, 
         const char* thng_id, 
+        int pub_states,
         sub_callback *callback);
 
 
@@ -447,7 +455,7 @@ evrythng_return_t evrythng_subscribe_thng_actions(
  *            \b EVRYTHNG_NOT_CONNECTED if internal context is not in connected state \n
  *            \b EVRYTHNG_SUCCESS on success \n
  */
-evrythng_return_t evrythng_unsubscribe_thng_actions(
+evrythng_return_t EvrythngUnsubThngActions(
         evrythng_handle_t handle, 
         const char* thng_id);
 
@@ -467,7 +475,7 @@ evrythng_return_t evrythng_unsubscribe_thng_actions(
  *            \b EVRYTHNG_NOT_CONNECTED if internal context is not in connected state \n
  *            \b EVRYTHNG_SUCCESS on success \n
  */
-evrythng_return_t evrythng_publish_thng_action(
+evrythng_return_t EvrythngPubThngAction(
         evrythng_handle_t handle, 
         const char* thng_id, 
         const char* action_name, 
@@ -488,7 +496,7 @@ evrythng_return_t evrythng_publish_thng_action(
  *            \b EVRYTHNG_NOT_CONNECTED if internal context is not in connected state \n
  *            \b EVRYTHNG_SUCCESS on success \n
  */
-evrythng_return_t evrythng_publish_thng_actions(
+evrythng_return_t EvrythngPubThngActions(
         evrythng_handle_t handle, 
         const char* thng_id, 
         const char* actions_json);
@@ -500,6 +508,7 @@ evrythng_return_t evrythng_publish_thng_actions(
  *
  * @param[in] handle   A context handle.
  * @param[in] thng_id  A thing ID. 
+ * @param[in] pub_states    The pubStates flag. 
  * @param[in] callback A pointer to a subscribe callback function. 
  *
  * @return    \b EVRYTHNG_BAD_ARGS if one the arguments is a null pointer or a too long string \n
@@ -508,9 +517,10 @@ evrythng_return_t evrythng_publish_thng_actions(
  *            \b EVRYTHNG_NOT_CONNECTED if internal context is not in connected state \n
  *            \b EVRYTHNG_SUCCESS on success \n
  */
-evrythng_return_t evrythng_subscribe_thng_location(
+evrythng_return_t EvrythngSubThngLocation(
         evrythng_handle_t handle, 
         const char* thng_id, 
+        int pub_states,
         sub_callback *callback);
 
 
@@ -526,7 +536,7 @@ evrythng_return_t evrythng_subscribe_thng_location(
  *            \b EVRYTHNG_NOT_CONNECTED if internal context is not in connected state \n
  *            \b EVRYTHNG_SUCCESS on success \n
  */
-evrythng_return_t evrythng_unsubscribe_thng_location(
+evrythng_return_t EvrythngUnsubThngLocation(
         evrythng_handle_t handle, 
         const char* thng_id);
 
@@ -545,7 +555,7 @@ evrythng_return_t evrythng_unsubscribe_thng_location(
  *            \b EVRYTHNG_NOT_CONNECTED if internal context is not in connected state \n
  *            \b EVRYTHNG_SUCCESS on success \n
  */
-evrythng_return_t evrythng_publish_thng_location(
+evrythng_return_t EvrythngPubThngLocation(
         evrythng_handle_t handle, 
         const char* thng_id, 
         const char* location_json);
@@ -558,6 +568,7 @@ evrythng_return_t evrythng_publish_thng_location(
  * @param[in] handle        A context handle.
  * @param[in] product_id    A product ID.
  * @param[in] property_name The name of the property. 
+ * @param[in] pub_states    The pubStates flag. 
  * @param[in] callback      A pointer to a subscribe callback function. 
  *
  * @return    \b EVRYTHNG_BAD_ARGS if one the arguments is a null pointer or a too long string \n
@@ -566,10 +577,11 @@ evrythng_return_t evrythng_publish_thng_location(
  *            \b EVRYTHNG_NOT_CONNECTED if internal context is not in connected state \n
  *            \b EVRYTHNG_SUCCESS on success \n
  */
-evrythng_return_t evrythng_subscribe_product_property(
+evrythng_return_t EvrythngSubProductProperty(
         evrythng_handle_t handle, 
         const char* product_id, 
         const char* property_name, 
+        int pub_states,
         sub_callback *callback);
 
 
@@ -586,7 +598,7 @@ evrythng_return_t evrythng_subscribe_product_property(
  *            \b EVRYTHNG_NOT_CONNECTED if internal context is not in connected state \n
  *            \b EVRYTHNG_SUCCESS on success \n
  */
-evrythng_return_t evrythng_unsubscribe_product_property(
+evrythng_return_t EvrythngUnsubProductProperty(
         evrythng_handle_t handle, 
         const char* product_id, 
         const char* property_name);
@@ -599,6 +611,7 @@ evrythng_return_t evrythng_unsubscribe_product_property(
  *
  * @param[in] handle      A context handle.
  * @param[in] product_id A product ID. 
+ * @param[in] pub_states    The pubStates flag. 
  * @param[in] callback    A pointer to a subscribe callback function. 
  *
  * @return    \b EVRYTHNG_BAD_ARGS if one the arguments is a null pointer or a too long string \n
@@ -607,9 +620,10 @@ evrythng_return_t evrythng_unsubscribe_product_property(
  *            \b EVRYTHNG_NOT_CONNECTED if internal context is not in connected state \n
  *            \b EVRYTHNG_SUCCESS on success \n
  */
-evrythng_return_t evrythng_subscribe_product_properties(
+evrythng_return_t EvrythngSubProductProperties(
         evrythng_handle_t handle, 
         const char* product_id, 
+        int pub_states,
         sub_callback *callback);
 
 
@@ -625,7 +639,7 @@ evrythng_return_t evrythng_subscribe_product_properties(
  *            \b EVRYTHNG_NOT_CONNECTED if internal context is not in connected state \n
  *            \b EVRYTHNG_SUCCESS on success \n
  */
-evrythng_return_t evrythng_unsubscribe_product_properties(
+evrythng_return_t EvrythngUnsubProductProperties(
         evrythng_handle_t handle, 
         const char* product_id);
 
@@ -645,7 +659,7 @@ evrythng_return_t evrythng_unsubscribe_product_properties(
  *            \b EVRYTHNG_NOT_CONNECTED if internal context is not in connected state \n
  *            \b EVRYTHNG_SUCCESS on success \n
  */
-evrythng_return_t evrythng_publish_product_property(
+evrythng_return_t EvrythngPubProductProperty(
         evrythng_handle_t handle, 
         const char* product_id, 
         const char* property_name, 
@@ -666,7 +680,7 @@ evrythng_return_t evrythng_publish_product_property(
  *            \b EVRYTHNG_NOT_CONNECTED if internal context is not in connected state \n
  *            \b EVRYTHNG_SUCCESS on success \n
  */
-evrythng_return_t evrythng_publish_product_properties(
+evrythng_return_t EvrythngPubProductProperties(
         evrythng_handle_t handle, 
         const char* product_id, 
         const char* properties_json);
@@ -679,6 +693,7 @@ evrythng_return_t evrythng_publish_product_properties(
  * @param[in] handle      A context handle.
  * @param[in] product_id  A product ID.
  * @param[in] action_name The name of an action. 
+ * @param[in] pub_states    The pubStates flag. 
  * @param[in] callback    A pointer to a subscribe callback function. 
  *
  * @return    \b EVRYTHNG_BAD_ARGS if one the arguments is a null pointer or a too long string \n
@@ -687,10 +702,11 @@ evrythng_return_t evrythng_publish_product_properties(
  *            \b EVRYTHNG_NOT_CONNECTED if internal context is not in connected state \n
  *            \b EVRYTHNG_SUCCESS on success \n
  */
-evrythng_return_t evrythng_subscribe_product_action(
+evrythng_return_t EvrythngSubProductAction(
         evrythng_handle_t handle, 
         const char* product_id, 
         const char* action_name, 
+        int pub_states,
         sub_callback *callback);
 
 
@@ -707,7 +723,7 @@ evrythng_return_t evrythng_subscribe_product_action(
  *            \b EVRYTHNG_NOT_CONNECTED if internal context is not in connected state \n
  *            \b EVRYTHNG_SUCCESS on success \n
  */
-evrythng_return_t evrythng_unsubscribe_product_action(
+evrythng_return_t EvrythngUnsubProductAction(
         evrythng_handle_t handle, 
         const char* product_id, 
         const char* action_name);
@@ -719,6 +735,7 @@ evrythng_return_t evrythng_unsubscribe_product_action(
  *
  * @param[in] handle      A context handle.
  * @param[in] product_id  A product ID. 
+ * @param[in] pub_states  A pubStates flag. 
  * @param[in] callback    A pointer to a subscribe callback function. 
  *
  * @return    \b EVRYTHNG_BAD_ARGS if one the arguments is a null pointer or a too long string \n
@@ -727,9 +744,10 @@ evrythng_return_t evrythng_unsubscribe_product_action(
  *            \b EVRYTHNG_NOT_CONNECTED if internal context is not in connected state \n
  *            \b EVRYTHNG_SUCCESS on success \n
  */
-evrythng_return_t evrythng_subscribe_product_actions(
+evrythng_return_t EvrythngSubProductActions(
         evrythng_handle_t handle, 
         const char* product_id, 
+        int pub_states,
         sub_callback *callback);
 
 
@@ -745,7 +763,7 @@ evrythng_return_t evrythng_subscribe_product_actions(
  *            \b EVRYTHNG_NOT_CONNECTED if internal context is not in connected state \n
  *            \b EVRYTHNG_SUCCESS on success \n
  */
-evrythng_return_t evrythng_unsubscribe_product_actions(
+evrythng_return_t EvrythngUnsubProductActions(
         evrythng_handle_t handle, 
         const char* product_id);
 
@@ -765,7 +783,7 @@ evrythng_return_t evrythng_unsubscribe_product_actions(
  *            \b EVRYTHNG_NOT_CONNECTED if internal context is not in connected state \n
  *            \b EVRYTHNG_SUCCESS on success \n
  */
-evrythng_return_t evrythng_publish_product_action(
+evrythng_return_t EvrythngPubProductAction(
         evrythng_handle_t handle, 
         const char* product_id, 
         const char* action_name, 
@@ -786,7 +804,7 @@ evrythng_return_t evrythng_publish_product_action(
  *            \b EVRYTHNG_NOT_CONNECTED if internal context is not in connected state \n
  *            \b EVRYTHNG_SUCCESS on success \n
  */
-evrythng_return_t evrythng_publish_product_actions(
+evrythng_return_t EvrythngPubProductActions(
         evrythng_handle_t handle, 
         const char* product_id, 
         const char* actions_json);
@@ -798,6 +816,7 @@ evrythng_return_t evrythng_publish_product_actions(
  *
  * @param[in] handle      A context handle.
  * @param[in] action_name The name of an action. 
+ * @param[in] pub_states  A pubStates flag. 
  * @param[in] callback    A pointer to a subscribe callback function. 
  *
  * @return    \b EVRYTHNG_BAD_ARGS if one the arguments is a null pointer or a too long string \n
@@ -806,9 +825,10 @@ evrythng_return_t evrythng_publish_product_actions(
  *            \b EVRYTHNG_NOT_CONNECTED if internal context is not in connected state \n
  *            \b EVRYTHNG_SUCCESS on success \n
  */
-evrythng_return_t evrythng_subscribe_action(
+evrythng_return_t EvrythngSubAction(
         evrythng_handle_t handle, 
         const char* action_name, 
+        int pub_states,
         sub_callback *callback);
 
 
@@ -824,7 +844,7 @@ evrythng_return_t evrythng_subscribe_action(
  *            \b EVRYTHNG_NOT_CONNECTED if internal context is not in connected state \n
  *            \b EVRYTHNG_SUCCESS on success \n
  */
-evrythng_return_t evrythng_unsubscribe_action(
+evrythng_return_t EvrythngUnsubAction(
         evrythng_handle_t handle, 
         const char* action_name);
 
@@ -834,6 +854,7 @@ evrythng_return_t evrythng_unsubscribe_action(
  * This function attempts to subscribe to all actions.
  *  
  * @param[in] handle   A context handle.
+ * @param[in] pub_states A pubStates flag. 
  * @param[in] callback A pointer to a subscribe callback function. 
  *
  * @return    \b EVRYTHNG_BAD_ARGS if one the arguments is a null pointer or a too long string \n
@@ -842,8 +863,9 @@ evrythng_return_t evrythng_unsubscribe_action(
  *            \b EVRYTHNG_NOT_CONNECTED if internal context is not in connected state \n
  *            \b EVRYTHNG_SUCCESS on success \n
  */
-evrythng_return_t evrythng_subscribe_actions(
+evrythng_return_t EvrythngSubActions(
         evrythng_handle_t handle, 
+        int pub_states,
         sub_callback *callback);
 
 
@@ -858,7 +880,7 @@ evrythng_return_t evrythng_subscribe_actions(
  *            \b EVRYTHNG_NOT_CONNECTED if internal context is not in connected state \n
  *            \b EVRYTHNG_SUCCESS on success \n
  */
-evrythng_return_t evrythng_unsubscribe_actions(
+evrythng_return_t EvrythngUnsubActions(
         evrythng_handle_t handle);
 
 
@@ -876,7 +898,7 @@ evrythng_return_t evrythng_unsubscribe_actions(
  *            \b EVRYTHNG_NOT_CONNECTED if internal context is not in connected state \n
  *            \b EVRYTHNG_SUCCESS on success \n
  */
-evrythng_return_t evrythng_publish_action(
+evrythng_return_t EvrythngPubAction(
         evrythng_handle_t handle, 
         const char* action_name, 
         const char* action_json);
@@ -895,7 +917,7 @@ evrythng_return_t evrythng_publish_action(
  *            \b EVRYTHNG_NOT_CONNECTED if internal context is not in connected state \n
  *            \b EVRYTHNG_SUCCESS on success \n
  */
-evrythng_return_t evrythng_publish_actions(
+evrythng_return_t EvrythngPubActions(
         evrythng_handle_t handle, 
         const char* actions_json);
 
