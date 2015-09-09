@@ -9,8 +9,8 @@
 
 #include "MQTTClient.h"
 #include "MQTTClientPersistence.h"
-#include "evrythng.h"
-#include "platform.h"
+#include "evrythng/evrythng.h"
+#include "evrythng/platform.h"
 
 
 #define TOPIC_MAX_LEN 128

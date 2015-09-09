@@ -5,7 +5,7 @@
 
 #include <string.h>
 
-#include "evrythng.h"
+#include "evrythng/evrythng.h"
 #include "evrythng_config.h"
 #include "CuTest.h"
 
