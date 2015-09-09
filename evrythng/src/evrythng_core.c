@@ -9,7 +9,7 @@
 
 #include "MQTTClient.h"
 #include "evrythng.h"
-#include "evrythng_platform.h"
+#include "platform.h"
 #include "evrythng_tls_certificate.h"
 
 #define TOPIC_MAX_LEN 128
