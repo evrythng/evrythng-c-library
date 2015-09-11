@@ -210,6 +210,8 @@ int keepalive(MQTTClient* c)
         goto exit;
     }
 
+    //printf("%s: %d, ping time left: %d, tick count = %u\n", __func__, __LINE__, TimerLeftMS(&c->ping_timer), xTaskGetTickCount());
+
     if (TimerIsExpired(&c->ping_timer))
     {
         if (!c->ping_outstanding)

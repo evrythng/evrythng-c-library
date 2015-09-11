@@ -14,18 +14,7 @@
 #define ACTION_JSON "{\"type\": \"_action_1\"}"
 #define LOCATION_JSON  "[{\"position\": { \"type\": \"Point\", \"coordinates\": [-17.3, 36] }}]"
 
-
-#if defined(FREERTOS_SIMULATOR)
-#include <unistd.h>
-/* This is application idle hook which is used by FreeRTOS */
-void vApplicationIdleHook(void)
-{
-    sleep(1);
-}
-#endif
-
 static Semaphore sub_sem;
-
 
 void on_connection_lost()
 {
