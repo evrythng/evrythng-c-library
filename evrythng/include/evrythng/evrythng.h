@@ -7,10 +7,6 @@
  *
  * \link evrythng.h \endlink
  *
- * \section examp_sec Examples
- *
- * \link ./demo/evrythng-cli.c \endlink
- *
  */
 
 /**

@@ -34,7 +34,7 @@
 #endif
 
 #include "MQTTPacket.h"
-#include "evrythng_platform.h"
+#include "evrythng/platform.h"
 
 #define MAX_PACKET_ID 65535 /* according to the MQTT specification - do not change! */
 

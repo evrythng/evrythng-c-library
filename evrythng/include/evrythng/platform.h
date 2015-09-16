@@ -12,6 +12,8 @@
     #include "WICED/types.h"
 #elif defined(MARVELL_PLATFORM)
     #include "marvell/types.h"
+#elif defined(FREERTOS_POSIX_PLATFORM)
+    #include "FreeRTOS_POSIX/types.h"
 #endif
 
 /* all failure return codes must be negative */

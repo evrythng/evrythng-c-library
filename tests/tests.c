@@ -5,7 +5,7 @@
 
 #include <string.h>
 
-#include "evrythng.h"
+#include "evrythng/evrythng.h"
 #include "evrythng_config.h"
 #include "CuTest.h"
 
@@ -14,18 +14,7 @@
 #define ACTION_JSON "{\"type\": \"_action_1\"}"
 #define LOCATION_JSON  "[{\"position\": { \"type\": \"Point\", \"coordinates\": [-17.3, 36] }}]"
 
-
-#if defined(FREERTOS_SIMULATOR)
-#include <unistd.h>
-/* This is application idle hook which is used by FreeRTOS */
-void vApplicationIdleHook(void)
-{
-    sleep(1);
-}
-#endif
-
 static Semaphore sub_sem;
-
 
 void on_connection_lost()
 {
@@ -405,7 +394,7 @@ void RunAllTests()
 	CuSuiteRun(suite);
 	CuSuiteSummary(suite, output);
 	CuSuiteDetails(suite, output);
-    platform_printf("%s\n\r", output->buffer);
+    platform_printf("%s\n", output->buffer);
     CuStringDelete(output);
     CuSuiteDelete(suite);
 

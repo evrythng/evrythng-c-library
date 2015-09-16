@@ -3,7 +3,7 @@
  * www.evrythng.com
  */
 
-#include "evrythng.h"
+#include "evrythng/evrythng.h"
 
 evrythng_return_t evrythng_publish( evrythng_handle_t handle, const char* entity, 
         const char* entity_id, const char* data_type, const char* data_name, const char* property_json);
