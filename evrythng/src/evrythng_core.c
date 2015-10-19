@@ -102,7 +102,7 @@ evrythng_return_t EvrythngInitHandle(evrythng_handle_t* handle)
     memcpy(&(*handle)->mqtt_conn_opts, &(MQTTPacket_connectData)MQTTPacket_connectData_initializer, sizeof(MQTTPacket_connectData));
 
     (*handle)->mqtt_conn_opts.MQTTVersion = 3;
-    (*handle)->mqtt_conn_opts.keepAliveInterval = 10;
+    (*handle)->mqtt_conn_opts.keepAliveInterval = 60;
     (*handle)->mqtt_conn_opts.cleansession = 1;
     (*handle)->mqtt_conn_opts.willFlag = 0;
     (*handle)->mqtt_conn_opts.username.cstring = USERNAME;
