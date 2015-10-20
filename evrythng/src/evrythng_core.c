@@ -676,8 +676,6 @@ evrythng_return_t evrythng_subscribe(
         return EVRYTHNG_MEMORY_ERROR;
     }
 
-    debug("subscribing to topic: %s", sub_topic);
-
     evrythng_return_t ret = evrythng_async_op(handle, MQTT_SUBSCRIBE, new_callback->topic, 0);
     if (ret != EVRYTHNG_SUCCESS) 
     {
@@ -708,7 +706,7 @@ evrythng_return_t evrythng_unsubscribe(
 
     if (entity_id == NULL) 
     {
-        rc = snprintf(unsub_topic, TOPIC_MAX_LEN, "%s/%s", entity, data_name);
+        rc = snprintf(unsub_topic, TOPIC_MAX_LEN, "%s/%s?pubStates=1", entity, data_name);
         if (rc < 0 || rc >= TOPIC_MAX_LEN) 
         {
             debug("topic overflow");
@@ -717,7 +715,7 @@ evrythng_return_t evrythng_unsubscribe(
     } 
     else if (data_name == NULL) 
     {
-        rc = snprintf(unsub_topic, TOPIC_MAX_LEN, "%s/%s/%s", entity, entity_id, data_type);
+        rc = snprintf(unsub_topic, TOPIC_MAX_LEN, "%s/%s/%s?pubStates=1", entity, entity_id, data_type);
         if (rc < 0 || rc >= TOPIC_MAX_LEN) 
         {
             debug("topic overflow");
@@ -726,7 +724,7 @@ evrythng_return_t evrythng_unsubscribe(
     } 
     else 
     {
-        rc = snprintf(unsub_topic, TOPIC_MAX_LEN, "%s/%s/%s/%s", entity, entity_id, data_type, data_name);
+        rc = snprintf(unsub_topic, TOPIC_MAX_LEN, "%s/%s/%s/%s?pubStates=1", entity, entity_id, data_type, data_name);
         if (rc < 0 || rc >= TOPIC_MAX_LEN) 
         {
             debug("topic overflow");
