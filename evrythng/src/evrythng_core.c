@@ -573,7 +573,7 @@ evrythng_return_t evrythng_publish(
 
     if (!MQTTisConnected(&handle->mqtt_client)) 
     {
-        error("client is not connected");
+        error("%s: client is not connected", __func__);
         return EVRYTHNG_NOT_CONNECTED;
     }
 
@@ -634,7 +634,7 @@ evrythng_return_t evrythng_subscribe(
 {
     if (!MQTTisConnected(&handle->mqtt_client)) 
     {
-        error("client is not connected");
+        error("%s: client is not connected", __func__);
         return EVRYTHNG_NOT_CONNECTED;
     }
 
@@ -697,7 +697,7 @@ evrythng_return_t evrythng_unsubscribe(
 {
     if (!MQTTisConnected(&handle->mqtt_client)) 
     {
-        error("client is not connected");
+        error("%s: client is not connected", __func__);
         return EVRYTHNG_NOT_CONNECTED;
     }
 
@@ -835,6 +835,8 @@ static void mqtt_thread(void* arg)
 
         SemaphorePost(&handle->next_op_result_sem);
     }
+
+    evrythng_disconnect_internal(handle);
 }
 
 
