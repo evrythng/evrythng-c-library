@@ -22,25 +22,10 @@
  extern "C" {
 #endif
 
-#if defined(WIN32_DLL) || defined(WIN64_DLL)
-  #define DLLImport __declspec(dllimport)
-  #define DLLExport __declspec(dllexport)
-#elif defined(LINUX_SO)
-  #define DLLImport extern
-  #define DLLExport  __attribute__ ((visibility ("default")))
-#else
-  #define DLLImport
-  #define DLLExport
-#endif
-
 #include "MQTTPacket.h"
 #include "evrythng/platform.h"
 
 #define MAX_PACKET_ID 65535 /* according to the MQTT specification - do not change! */
-
-#if !defined(MAX_MESSAGE_HANDLERS)
-#define MAX_MESSAGE_HANDLERS 20 /* redefinable - how many subscriptions do you want? */
-#endif
 
 enum QoS { QOS0, QOS1, QOS2 };
 
@@ -60,8 +45,6 @@ typedef struct MessageData
     MQTTString* topicName;
 } MessageData;
 
-typedef void (*messageHandler)(MessageData*, void*);
-
 typedef struct MQTTClient
 {
     unsigned int next_packetid,
@@ -74,14 +57,8 @@ typedef struct MQTTClient
     char ping_outstanding;
     int isconnected;
 
-    struct MessageHandlers
-    {
-        const char* topicFilter;
-        void (*fp) (MessageData*, void*);
-        void* context;
-    } messageHandlers[MAX_MESSAGE_HANDLERS];      /* Message handlers are indexed by subscription topic */
-
-    void (*defaultMessageHandler) (MessageData*);
+    void (*messageHandler) (MessageData*, void*);
+    void* messageHandlerData;
 
     Network* ipstack;
     Timer ping_timer;
@@ -102,17 +79,17 @@ typedef struct MQTTClient
  * @param command_timeout_ms
  * @param
  */
-DLLExport void MQTTClientInit(MQTTClient* client, Network* network, unsigned int command_timeout_ms,
+void MQTTClientInit(MQTTClient* client, Network* network, unsigned int command_timeout_ms,
 		unsigned char* sendbuf, size_t sendbuf_size, unsigned char* readbuf, size_t readbuf_size);
 
-DLLExport void MQTTClientDeinit(MQTTClient *client);
+void MQTTClientDeinit(MQTTClient *client);
 
 /** MQTT Connect - send an MQTT connect packet down the network and wait for a Connack
  *  The nework object must be connected to the network endpoint before calling this
  *  @param options - connect options
  *  @return success code
  */
-DLLExport int MQTTConnect(MQTTClient* client, MQTTPacket_connectData* options);
+int MQTTConnect(MQTTClient* client, MQTTPacket_connectData* options);
 
 /** MQTT Publish - send an MQTT publish packet and wait for all acks to complete for all QoSs
  *  @param client - the client object to use
@@ -120,7 +97,7 @@ DLLExport int MQTTConnect(MQTTClient* client, MQTTPacket_connectData* options);
  *  @param message - the message to send
  *  @return success code
  */
-DLLExport int MQTTPublish(MQTTClient* client, const char*, MQTTMessage*);
+int MQTTPublish(MQTTClient* client, const char*, MQTTMessage*);
 
 /** MQTT Subscribe - send an MQTT subscribe packet and wait for suback before returning.
  *  @param client - the client object to use
@@ -129,29 +106,29 @@ DLLExport int MQTTPublish(MQTTClient* client, const char*, MQTTMessage*);
  *  @param context - user supplied pointer to private context
  *  @return success code
  */
-DLLExport int MQTTSubscribe(MQTTClient* client, const char* topicFilter, enum QoS, messageHandler, void* context);
+int MQTTSubscribe(MQTTClient* client, const char* topicFilter, enum QoS);
 
 /** MQTT Subscribe - send an MQTT unsubscribe packet and wait for unsuback before returning.
  *  @param client - the client object to use
  *  @param topicFilter - the topic filter to unsubscribe from
  *  @return success code
  */
-DLLExport int MQTTUnsubscribe(MQTTClient* client, const char* topicFilter);
+int MQTTUnsubscribe(MQTTClient* client, const char* topicFilter);
 
 /** MQTT Disconnect - send an MQTT disconnect packet and close the connection
  *  @param client - the client object to use
  *  @return success code
  */
-DLLExport int MQTTDisconnect(MQTTClient* client);
+int MQTTDisconnect(MQTTClient* client);
 
 /** MQTT Yield - MQTT background
  *  @param client - the client object to use
  *  @param time - the time, in milliseconds, to yield for 
  *  @return success code
  */
-DLLExport int MQTTYield(MQTTClient* client, int time);
+int MQTTYield(MQTTClient* client, int time);
 
-DLLExport int MQTTisConnected(MQTTClient* client);
+int MQTTisConnected(MQTTClient* client);
 
 
 char MQTTisTopicMatched(char* topicFilter, MQTTString* topicName);
@@ -161,7 +138,7 @@ char MQTTisTopicMatched(char* topicFilter, MQTTString* topicName);
 *  @param client - the client object to use
 *  @return success code
 */
-DLLExport int MQTTStartTask(MQTTClient* client);
+int MQTTStartTask(MQTTClient* client);
 #endif
 
 #if defined(__cplusplus)

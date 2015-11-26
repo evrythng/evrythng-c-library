@@ -16,8 +16,9 @@
 #define USERNAME "authorization"
 
 static void mqtt_thread(void* arg);
+static void message_callback(MessageData* data, void* userdata);
 static evrythng_return_t evrythng_connect_internal(evrythng_handle_t handle);
-static evrythng_return_t evrythng_disconnect_internal(evrythng_handle_t handle);
+static evrythng_return_t evrythng_disconnect_internal(evrythng_handle_t handle, int unsubscribe);
 
 typedef struct sub_callback_t {
     char*                   topic;
@@ -68,6 +69,8 @@ struct evrythng_ctx_t {
 
     sub_callback_t *sub_callbacks;
 
+    Mutex       cb_mtx;
+
     mqtt_op     next_op;
     Mutex       next_op_mtx;
     Semaphore   next_op_ready_sem;
@@ -111,7 +114,7 @@ evrythng_return_t EvrythngInitHandle(evrythng_handle_t* handle)
     (*handle)->ca_buf = cert_buffer;
     (*handle)->ca_size = sizeof cert_buffer;
 
-    (*handle)->command_timeout_ms = 5000;
+    (*handle)->command_timeout_ms = (*handle)->mqtt_conn_opts.keepAliveInterval * 1000;
 
 	MQTTClientInit(
             &(*handle)->mqtt_client, 
@@ -122,6 +125,10 @@ evrythng_return_t EvrythngInitHandle(evrythng_handle_t* handle)
 
     (*handle)->mqtt_thread_stacksize = 8192;
 
+    (*handle)->mqtt_client.messageHandler = message_callback;
+    (*handle)->mqtt_client.messageHandlerData = (void*)(*handle);
+
+    MutexInit(&(*handle)->cb_mtx);
     MutexInit(&(*handle)->next_op_mtx);
     SemaphoreInit(&(*handle)->next_op_ready_sem);
     SemaphoreInit(&(*handle)->next_op_result_sem);
@@ -146,6 +153,8 @@ void EvrythngDestroyHandle(evrythng_handle_t handle)
     if (handle->key) platform_free(handle->key);
     if (handle->client_id) platform_free(handle->client_id);
 
+    MutexLock(&handle->cb_mtx);
+
     sub_callback_t **_sub_callback = &handle->sub_callbacks;
     while (*_sub_callback) 
     {
@@ -155,8 +164,11 @@ void EvrythngDestroyHandle(evrythng_handle_t handle)
         platform_free(_sub_callback_tmp);
     }
 
+    MutexUnlock(&handle->cb_mtx);
+
     MQTTClientDeinit(&handle->mqtt_client);
 
+    MutexDeinit(&handle->cb_mtx);
     MutexDeinit(&handle->next_op_mtx);
     SemaphoreDeinit(&handle->next_op_ready_sem);
     SemaphoreDeinit(&handle->next_op_result_sem);
@@ -294,23 +306,44 @@ evrythng_return_t EvrythngSetThreadStacksize(evrythng_handle_t handle, int stack
 }
 
 
-static sub_callback_t* add_sub_callback(evrythng_handle_t handle, char* topic, int qos, sub_callback *callback)
+static evrythng_return_t add_sub_callback(evrythng_handle_t handle, char* topic, int qos, sub_callback *callback)
 {
+    evrythng_return_t ret = EVRYTHNG_SUCCESS;
+
+    MutexLock(&handle->cb_mtx);
+
+    char* qp_start = strstr(topic, "?pubStates=");
+    int topic_len = 
+        qp_start == NULL ? strlen(topic) : qp_start - topic;
+
     sub_callback_t **_sub_callbacks = &handle->sub_callbacks;
     while (*_sub_callbacks) 
     {
+        qp_start = strstr((*_sub_callbacks)->topic, "?pubStates=");
+        int saved_topic_len = 
+            qp_start == NULL ? strlen((*_sub_callbacks)->topic) : qp_start - (*_sub_callbacks)->topic;
+
+        if ((topic_len == saved_topic_len) && 
+                (strncmp((*_sub_callbacks)->topic, topic, saved_topic_len)) == 0) 
+        {
+            debug("callback for %s already exists", topic);
+            ret = EVRYTHNG_ALREADY_SUBSCRIBED;
+            goto out;
+        }
         _sub_callbacks = &(*_sub_callbacks)->next;
     }
 
     if ((*_sub_callbacks = (sub_callback_t*)platform_malloc(sizeof(sub_callback_t))) == NULL) 
     {
-        return 0;
+        ret = EVRYTHNG_MEMORY_ERROR;
+        goto out;
     }
 
     if (((*_sub_callbacks)->topic = (char*)platform_malloc(strlen(topic) + 1)) == NULL) 
     {
         platform_free(*_sub_callbacks);
-        return 0;
+        ret = EVRYTHNG_MEMORY_ERROR;
+        goto out;
     }
 
     strcpy((*_sub_callbacks)->topic, topic);
@@ -318,44 +351,85 @@ static sub_callback_t* add_sub_callback(evrythng_handle_t handle, char* topic, i
     (*_sub_callbacks)->callback = callback;
     (*_sub_callbacks)->next = 0;
 
-    return *_sub_callbacks;
+out:
+    MutexUnlock(&handle->cb_mtx);
+    return ret;
 }
 
 
-static void rm_sub_callback(evrythng_handle_t handle, const char* topic)
+static evrythng_return_t rm_sub_callback(evrythng_handle_t handle, char* topic)
 {
-    sub_callback_t *_sub_callback = handle->sub_callbacks;
+    evrythng_return_t ret = EVRYTHNG_NOT_SUBSCRIBED;
 
-    if (!_sub_callback) 
-        return;
+    MutexLock(&handle->cb_mtx);
 
-    if (strcmp(_sub_callback->topic, topic) == 0) 
+    sub_callback_t *currP, *prevP = NULL;
+
+    for (currP = handle->sub_callbacks; currP != NULL; prevP = currP, currP = currP->next) 
     {
-        handle->sub_callbacks = _sub_callback->next;
-        platform_free(_sub_callback->topic);
-        platform_free(_sub_callback);
-        return;
+        int len;
+        char* qp = strstr(currP->topic, "?pubStates=");
+        if (qp)
+            len = qp - currP->topic;
+        else
+            len = strlen(currP->topic);
+
+        if (strncmp(currP->topic, topic, len) == 0) 
+        {
+            if (prevP == NULL) 
+            {
+                /* Fix beginning pointer. */
+                handle->sub_callbacks = currP->next;
+            } 
+            else 
+            {
+                /*
+                 * Fix previous node's next to
+                 * skip over the removed node.
+                 */
+                prevP->next = currP->next;
+            }
+
+            /* Deallocate the node. */
+            strcpy(topic, currP->topic);
+            platform_free(currP->topic);
+            platform_free(currP);
+
+            /* Done searching. */
+            ret = EVRYTHNG_SUCCESS;
+            break;
+        }
     }
 
-    while (_sub_callback->next) 
+    MutexUnlock(&handle->cb_mtx);
+    return ret;
+}
+
+
+static sub_callback* get_sub_callback(evrythng_handle_t handle, MQTTString* topic)
+{
+    sub_callback* cb = 0;
+
+    MutexLock(&handle->cb_mtx);
+
+    sub_callback_t *_sub_callback = handle->sub_callbacks;
+    while (_sub_callback) 
     {
-        if (strcmp(_sub_callback->next->topic, topic) == 0) 
+        if (MQTTPacket_equals(topic, _sub_callback->topic) || MQTTisTopicMatched(_sub_callback->topic, topic))
         {
-            sub_callback_t* _sub_callback_tmp = _sub_callback->next;
-
-            _sub_callback->next = _sub_callback->next->next;
-
-            platform_free(_sub_callback_tmp->topic);
-            platform_free(_sub_callback_tmp);
-            continue;
+            cb = _sub_callback->callback;
+            break;
         }
         _sub_callback = _sub_callback->next;
     }
+
+    MutexUnlock(&handle->cb_mtx);
+
+    return cb;
 }
 
 
-
-static void message_callback(MessageData* data, void* userdata)
+void message_callback(MessageData* data, void* userdata)
 {
     evrythng_handle_t handle = (evrythng_handle_t)userdata;
 
@@ -368,14 +442,10 @@ static void message_callback(MessageData* data, void* userdata)
         return;
     }
 
-    sub_callback_t *_sub_callback = handle->sub_callbacks;
-    while (_sub_callback) 
+    sub_callback* cb = get_sub_callback(handle, data->topicName);
+    if (cb)
     {
-        if (MQTTPacket_equals(data->topicName, _sub_callback->topic) || MQTTisTopicMatched(_sub_callback->topic, data->topicName))
-        {
-            (*(_sub_callback->callback))(data->message->payload, data->message->payloadlen);
-        }
-        _sub_callback = _sub_callback->next;
+        (*cb)(data->message->payload, data->message->payloadlen);
     }
 }
 
@@ -488,25 +558,28 @@ evrythng_return_t evrythng_connect_internal(evrythng_handle_t handle)
         return EVRYTHNG_CONNECTION_FAILED;
     }
 
-    sub_callback_t **_sub_callbacks = &handle->sub_callbacks;
-    while (*_sub_callbacks) 
+
+    MutexLock(&handle->cb_mtx);
+
+    sub_callback_t* _sub_callback = handle->sub_callbacks;
+    while (_sub_callback) 
     {
         int rc = MQTTSubscribe(
                 &handle->mqtt_client, 
-                (*_sub_callbacks)->topic, 
-                (*_sub_callbacks)->qos,
-                message_callback,
-                handle);
+                _sub_callback->topic, 
+                _sub_callback->qos);
         if (rc >= 0) 
         {
-            debug("successfully subscribed to %s", (*_sub_callbacks)->topic);
+            debug("successfully subscribed to %s", _sub_callback->topic);
         }
         else 
         {
             error("subscription failed, rc = %d", rc);
+            break;
         }
-        _sub_callbacks = &(*_sub_callbacks)->next;
+        _sub_callback = _sub_callback->next;
     }
+    MutexUnlock(&handle->cb_mtx);
 
     return EVRYTHNG_SUCCESS;
 }
@@ -527,26 +600,34 @@ evrythng_return_t EvrythngDisconnect(evrythng_handle_t handle)
 }
 
 
-evrythng_return_t evrythng_disconnect_internal(evrythng_handle_t handle)
+evrythng_return_t evrythng_disconnect_internal(evrythng_handle_t handle, int unsubscribe)
 {
     int rc;
 
     if (!MQTTisConnected(&handle->mqtt_client))
         return EVRYTHNG_SUCCESS;
 
-    sub_callback_t **_sub_callbacks = &handle->sub_callbacks;
-    while (*_sub_callbacks) 
+    if (unsubscribe)
     {
-        rc = MQTTUnsubscribe(&handle->mqtt_client, (*_sub_callbacks)->topic);
-        if (rc >= 0) 
+        MutexLock(&handle->cb_mtx);
+
+        sub_callback_t* _sub_callback = handle->sub_callbacks;
+        while (_sub_callback) 
         {
-            debug("successfully unsubscribed from %s", (*_sub_callbacks)->topic);
+            rc = MQTTUnsubscribe(&handle->mqtt_client, _sub_callback->topic);
+            if (rc >= 0) 
+            {
+                debug("successfully unsubscribed from %s", _sub_callback->topic);
+            }
+            else 
+            {
+                warning("unsubscription failed, rc = %d", rc);
+                break;
+            }
+            _sub_callback = _sub_callback->next;
         }
-        else 
-        {
-            warning("unsubscription failed, rc = %d", rc);
-        }
-        _sub_callbacks = &(*_sub_callbacks)->next;
+
+        MutexUnlock(&handle->cb_mtx);
     }
 
     rc = MQTTDisconnect(&handle->mqtt_client);
@@ -639,7 +720,7 @@ evrythng_return_t evrythng_subscribe(
     }
 
     int rc;
-    char sub_topic[TOPIC_MAX_LEN];
+    char sub_topic[TOPIC_MAX_LEN] = { 0 };
 
     if (entity_id == NULL) 
     {
@@ -669,14 +750,14 @@ evrythng_return_t evrythng_subscribe(
         }
     }
 
-    sub_callback_t* new_callback = add_sub_callback(handle, sub_topic, handle->qos, callback);
-    if (!new_callback) 
+    evrythng_return_t ret = add_sub_callback(handle, sub_topic, handle->qos, callback);
+    if (ret != EVRYTHNG_SUCCESS)
     {
-        error("could not add subscription callback");
-        return EVRYTHNG_MEMORY_ERROR;
+        error("could not add sub topic: %d", ret);
+        return ret;
     }
 
-    evrythng_return_t ret = evrythng_async_op(handle, MQTT_SUBSCRIBE, new_callback->topic, 0);
+    ret = evrythng_async_op(handle, MQTT_SUBSCRIBE, sub_topic, 0);
     if (ret != EVRYTHNG_SUCCESS) 
     {
         debug("subscription failed, ret = %d", ret);
@@ -706,7 +787,7 @@ evrythng_return_t evrythng_unsubscribe(
 
     if (entity_id == NULL) 
     {
-        rc = snprintf(unsub_topic, TOPIC_MAX_LEN, "%s/%s?pubStates=1", entity, data_name);
+        rc = snprintf(unsub_topic, TOPIC_MAX_LEN, "%s/%s", entity, data_name);
         if (rc < 0 || rc >= TOPIC_MAX_LEN) 
         {
             debug("topic overflow");
@@ -715,7 +796,7 @@ evrythng_return_t evrythng_unsubscribe(
     } 
     else if (data_name == NULL) 
     {
-        rc = snprintf(unsub_topic, TOPIC_MAX_LEN, "%s/%s/%s?pubStates=1", entity, entity_id, data_type);
+        rc = snprintf(unsub_topic, TOPIC_MAX_LEN, "%s/%s/%s", entity, entity_id, data_type);
         if (rc < 0 || rc >= TOPIC_MAX_LEN) 
         {
             debug("topic overflow");
@@ -724,7 +805,7 @@ evrythng_return_t evrythng_unsubscribe(
     } 
     else 
     {
-        rc = snprintf(unsub_topic, TOPIC_MAX_LEN, "%s/%s/%s/%s?pubStates=1", entity, entity_id, data_type, data_name);
+        rc = snprintf(unsub_topic, TOPIC_MAX_LEN, "%s/%s/%s/%s", entity, entity_id, data_type, data_name);
         if (rc < 0 || rc >= TOPIC_MAX_LEN) 
         {
             debug("topic overflow");
@@ -732,7 +813,12 @@ evrythng_return_t evrythng_unsubscribe(
         }
     }
 
-    rm_sub_callback(handle, unsub_topic);
+    evrythng_return_t ret = rm_sub_callback(handle, unsub_topic);
+    if (ret != EVRYTHNG_SUCCESS)
+    {
+        debug("could not remove unsub topic: %d", ret);
+        return ret;
+    }
 
     return evrythng_async_op(handle, MQTT_UNSUBSCRIBE, unsub_topic, 0);
 }
@@ -749,7 +835,7 @@ static void mqtt_thread(void* arg)
         if (rc == MQTT_CONNECTION_LOST)
         {
             warning("mqtt server connection lost");
-            evrythng_disconnect_internal(handle);
+            evrythng_disconnect_internal(handle, 0);
 
             if (handle->on_connection_lost)
                 (*handle->on_connection_lost)();
@@ -783,7 +869,7 @@ static void mqtt_thread(void* arg)
                 break;
 
             case MQTT_DISCONNECT:
-                handle->next_op.result = evrythng_disconnect_internal(handle);
+                handle->next_op.result = evrythng_disconnect_internal(handle, 1);
                 break;
 
             case MQTT_PUBLISH:
@@ -805,9 +891,7 @@ static void mqtt_thread(void* arg)
             case MQTT_SUBSCRIBE:
                 rc = MQTTSubscribe(&handle->mqtt_client, 
                         handle->next_op.topic, 
-                        handle->qos, 
-                        message_callback, 
-                        handle);
+                        handle->qos);
                 if (rc >= 0) 
                 {
                     debug("successfully subscribed to %s", handle->next_op.topic);
@@ -836,7 +920,7 @@ static void mqtt_thread(void* arg)
         SemaphorePost(&handle->next_op_result_sem);
     }
 
-    evrythng_disconnect_internal(handle);
+    evrythng_disconnect_internal(handle, 1);
 }
 
 

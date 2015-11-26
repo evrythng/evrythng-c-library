@@ -27,6 +27,8 @@
 
 typedef enum _evrythng_return_t 
 {
+    EVRYTHNG_NOT_SUBSCRIBED      = -13,
+    EVRYTHNG_ALREADY_SUBSCRIBED  = -12,
     EVRYTHNG_TIMEOUT             = -11,
     EVRYTHNG_UNSUBSCRIPTION_ERROR= -10,
     EVRYTHNG_SUBSCRIPTION_ERROR  = -9,
@@ -283,6 +285,7 @@ evrythng_return_t EvrythngPubThngProperty(
  *
  * @return    \b EVRYTHNG_BAD_ARGS if one the arguments is a null pointer or a too long string \n
  *            \b EVRYTHNG_SUBSCRIPTION_ERROR if an error occured trying to subscribe to a topic \n
+ *            \b EVRYTHNG_ALREADY_SUBSCRIBED if subcribtion already exists \n
  *            \b EVRYTHNG_MEMORY_ERROR if memory allocation error occured \n
  *            \b EVRYTHNG_NOT_CONNECTED if internal context is not in connected state \n
  *            \b EVRYTHNG_SUCCESS on success \n
@@ -305,6 +308,7 @@ evrythng_return_t EvrythngSubThngProperty(
  *
  * @return    \b EVRYTHNG_BAD_ARGS if one the arguments is a null pointer or a too long string \n
  *            \b EVRYTHNG_UNSUBSCRIPTION_ERROR if an error occured trying to unsubscribe from a topic \n
+ *            \b EVRYTHNG_NOT_SUBSCRIBED if trying to unsubcribe from an unexistent subscribtion \n
  *            \b EVRYTHNG_NOT_CONNECTED if internal context is not in connected state \n
  *            \b EVRYTHNG_SUCCESS on success \n
  */
@@ -326,6 +330,7 @@ evrythng_return_t EvrythngUnsubThngProperty(
  *
  * @return    \b EVRYTHNG_BAD_ARGS if one the arguments is a null pointer or a too long string \n
  *            \b EVRYTHNG_SUBSCRIPTION_ERROR if an error occured trying to subscribe to a topic \n
+ *            \b EVRYTHNG_ALREADY_SUBSCRIBED if subcribtion already exists \n
  *            \b EVRYTHNG_MEMORY_ERROR if memory allocation error occured \n
  *            \b EVRYTHNG_NOT_CONNECTED if internal context is not in connected state \n
  *            \b EVRYTHNG_SUCCESS on success \n
@@ -346,6 +351,7 @@ evrythng_return_t EvrythngSubThngProperties(
  *
  * @return    \b EVRYTHNG_BAD_ARGS if one the arguments is a null pointer or a too long string \n
  *            \b EVRYTHNG_UNSUBSCRIPTION_ERROR if an error occured trying to unsubscribe from a topic \n
+ *            \b EVRYTHNG_NOT_SUBSCRIBED if trying to unsubcribe from an unexistent subscribtion \n
  *            \b EVRYTHNG_NOT_CONNECTED if internal context is not in connected state \n
  *            \b EVRYTHNG_SUCCESS on success \n
  */
@@ -386,6 +392,7 @@ evrythng_return_t EvrythngPubThngProperties(
  *
  * @return    \b EVRYTHNG_BAD_ARGS if one the arguments is a null pointer or a too long string \n
  *            \b EVRYTHNG_SUBSCRIPTION_ERROR if an error occured trying to subscribe to a topic \n
+ *            \b EVRYTHNG_ALREADY_SUBSCRIBED if subcribtion already exists \n
  *            \b EVRYTHNG_MEMORY_ERROR if memory allocation error occured \n
  *            \b EVRYTHNG_NOT_CONNECTED if internal context is not in connected state \n
  *            \b EVRYTHNG_SUCCESS on success \n
@@ -408,6 +415,7 @@ evrythng_return_t EvrythngSubThngAction(
  *
  * @return    \b EVRYTHNG_BAD_ARGS if one the arguments is a null pointer or a too long string \n
  *            \b EVRYTHNG_UNSUBSCRIPTION_ERROR if an error occured trying to unsubscribe from a topic \n
+ *            \b EVRYTHNG_NOT_SUBSCRIBED if trying to unsubcribe from an unexistent subscribtion \n
  *            \b EVRYTHNG_NOT_CONNECTED if internal context is not in connected state \n
  *            \b EVRYTHNG_SUCCESS on success \n
  */
@@ -428,6 +436,7 @@ evrythng_return_t EvrythngUnsubThngAction(
  *
  * @return    \b EVRYTHNG_BAD_ARGS if one the arguments is a null pointer or a too long string \n
  *            \b EVRYTHNG_SUBSCRIPTION_ERROR if an error occured trying to subscribe to a topic \n
+ *            \b EVRYTHNG_ALREADY_SUBSCRIBED if subcribtion already exists \n
  *            \b EVRYTHNG_MEMORY_ERROR if memory allocation error occured \n
  *            \b EVRYTHNG_NOT_CONNECTED if internal context is not in connected state \n
  *            \b EVRYTHNG_SUCCESS on success \n
@@ -448,6 +457,7 @@ evrythng_return_t EvrythngSubThngActions(
  *
  * @return    \b EVRYTHNG_BAD_ARGS if one the arguments is a null pointer or a too long string \n
  *            \b EVRYTHNG_UNSUBSCRIPTION_ERROR if an error occured trying to unsubscribe from a topic \n
+ *            \b EVRYTHNG_NOT_SUBSCRIBED if trying to unsubcribe from an unexistent subscribtion \n
  *            \b EVRYTHNG_NOT_CONNECTED if internal context is not in connected state \n
  *            \b EVRYTHNG_SUCCESS on success \n
  */
@@ -509,6 +519,7 @@ evrythng_return_t EvrythngPubThngActions(
  *
  * @return    \b EVRYTHNG_BAD_ARGS if one the arguments is a null pointer or a too long string \n
  *            \b EVRYTHNG_SUBSCRIPTION_ERROR if an error occured trying to subscribe to a topic \n
+ *            \b EVRYTHNG_ALREADY_SUBSCRIBED if subcribtion already exists \n
  *            \b EVRYTHNG_MEMORY_ERROR if memory allocation error occured \n
  *            \b EVRYTHNG_NOT_CONNECTED if internal context is not in connected state \n
  *            \b EVRYTHNG_SUCCESS on success \n
@@ -529,6 +540,7 @@ evrythng_return_t EvrythngSubThngLocation(
  *
  * @return    \b EVRYTHNG_BAD_ARGS if one the arguments is a null pointer or a too long string \n
  *            \b EVRYTHNG_UNSUBSCRIPTION_ERROR if an error occured trying to unsubscribe from a topic \n
+ *            \b EVRYTHNG_NOT_SUBSCRIBED if trying to unsubcribe from an unexistent subscribtion \n
  *            \b EVRYTHNG_NOT_CONNECTED if internal context is not in connected state \n
  *            \b EVRYTHNG_SUCCESS on success \n
  */
@@ -569,6 +581,7 @@ evrythng_return_t EvrythngPubThngLocation(
  *
  * @return    \b EVRYTHNG_BAD_ARGS if one the arguments is a null pointer or a too long string \n
  *            \b EVRYTHNG_SUBSCRIPTION_ERROR if an error occured trying to subscribe to a topic \n
+ *            \b EVRYTHNG_ALREADY_SUBSCRIBED if subcribtion already exists \n
  *            \b EVRYTHNG_MEMORY_ERROR if memory allocation error occured \n
  *            \b EVRYTHNG_NOT_CONNECTED if internal context is not in connected state \n
  *            \b EVRYTHNG_SUCCESS on success \n
@@ -591,6 +604,7 @@ evrythng_return_t EvrythngSubProductProperty(
  *
  * @return    \b EVRYTHNG_BAD_ARGS if one the arguments is a null pointer or a too long string \n
  *            \b EVRYTHNG_UNSUBSCRIPTION_ERROR if an error occured trying to unsubscribe from a topic \n
+ *            \b EVRYTHNG_NOT_SUBSCRIBED if trying to unsubcribe from an unexistent subscribtion \n
  *            \b EVRYTHNG_NOT_CONNECTED if internal context is not in connected state \n
  *            \b EVRYTHNG_SUCCESS on success \n
  */
@@ -612,6 +626,7 @@ evrythng_return_t EvrythngUnsubProductProperty(
  *
  * @return    \b EVRYTHNG_BAD_ARGS if one the arguments is a null pointer or a too long string \n
  *            \b EVRYTHNG_SUBSCRIPTION_ERROR if an error occured trying to subscribe to a topic \n
+ *            \b EVRYTHNG_ALREADY_SUBSCRIBED if subcribtion already exists \n
  *            \b EVRYTHNG_MEMORY_ERROR if memory allocation error occured \n
  *            \b EVRYTHNG_NOT_CONNECTED if internal context is not in connected state \n
  *            \b EVRYTHNG_SUCCESS on success \n
@@ -632,6 +647,7 @@ evrythng_return_t EvrythngSubProductProperties(
  *
  * @return    \b EVRYTHNG_BAD_ARGS if one the arguments is a null pointer or a too long string \n
  *            \b EVRYTHNG_UNSUBSCRIPTION_ERROR if an error occured trying to unsubscribe from a topic \n
+ *            \b EVRYTHNG_NOT_SUBSCRIBED if trying to unsubcribe from an unexistent subscribtion \n
  *            \b EVRYTHNG_NOT_CONNECTED if internal context is not in connected state \n
  *            \b EVRYTHNG_SUCCESS on success \n
  */
@@ -694,6 +710,7 @@ evrythng_return_t EvrythngPubProductProperties(
  *
  * @return    \b EVRYTHNG_BAD_ARGS if one the arguments is a null pointer or a too long string \n
  *            \b EVRYTHNG_SUBSCRIPTION_ERROR if an error occured trying to subscribe to a topic \n
+ *            \b EVRYTHNG_ALREADY_SUBSCRIBED if subcribtion already exists \n
  *            \b EVRYTHNG_MEMORY_ERROR if memory allocation error occured \n
  *            \b EVRYTHNG_NOT_CONNECTED if internal context is not in connected state \n
  *            \b EVRYTHNG_SUCCESS on success \n
@@ -716,6 +733,7 @@ evrythng_return_t EvrythngSubProductAction(
  *
  * @return    \b EVRYTHNG_BAD_ARGS if one the arguments is a null pointer or a too long string \n
  *            \b EVRYTHNG_UNSUBSCRIPTION_ERROR if an error occured trying to unsubscribe from a topic \n
+ *            \b EVRYTHNG_NOT_SUBSCRIBED if trying to unsubcribe from an unexistent subscribtion \n
  *            \b EVRYTHNG_NOT_CONNECTED if internal context is not in connected state \n
  *            \b EVRYTHNG_SUCCESS on success \n
  */
@@ -736,6 +754,7 @@ evrythng_return_t EvrythngUnsubProductAction(
  *
  * @return    \b EVRYTHNG_BAD_ARGS if one the arguments is a null pointer or a too long string \n
  *            \b EVRYTHNG_SUBSCRIPTION_ERROR if an error occured trying to subscribe to a topic \n
+ *            \b EVRYTHNG_ALREADY_SUBSCRIBED if subcribtion already exists \n
  *            \b EVRYTHNG_MEMORY_ERROR if memory allocation error occured \n
  *            \b EVRYTHNG_NOT_CONNECTED if internal context is not in connected state \n
  *            \b EVRYTHNG_SUCCESS on success \n
@@ -756,6 +775,7 @@ evrythng_return_t EvrythngSubProductActions(
  *
  * @return    \b EVRYTHNG_BAD_ARGS if one the arguments is a null pointer or a too long string \n
  *            \b EVRYTHNG_UNSUBSCRIPTION_ERROR if an error occured trying to unsubscribe from a topic \n
+ *            \b EVRYTHNG_NOT_SUBSCRIBED if trying to unsubcribe from an unexistent subscribtion \n
  *            \b EVRYTHNG_NOT_CONNECTED if internal context is not in connected state \n
  *            \b EVRYTHNG_SUCCESS on success \n
  */
@@ -817,6 +837,7 @@ evrythng_return_t EvrythngPubProductActions(
  *
  * @return    \b EVRYTHNG_BAD_ARGS if one the arguments is a null pointer or a too long string \n
  *            \b EVRYTHNG_SUBSCRIPTION_ERROR if an error occured trying to subscribe to a topic \n
+ *            \b EVRYTHNG_ALREADY_SUBSCRIBED if subcribtion already exists \n
  *            \b EVRYTHNG_MEMORY_ERROR if memory allocation error occured \n
  *            \b EVRYTHNG_NOT_CONNECTED if internal context is not in connected state \n
  *            \b EVRYTHNG_SUCCESS on success \n
@@ -837,6 +858,7 @@ evrythng_return_t EvrythngSubAction(
  *
  * @return    \b EVRYTHNG_BAD_ARGS if one the arguments is a null pointer or a too long string \n
  *            \b EVRYTHNG_UNSUBSCRIPTION_ERROR if an error occured trying to unsubscribe from a topic \n
+ *            \b EVRYTHNG_NOT_SUBSCRIBED if trying to unsubcribe from an unexistent subscribtion \n
  *            \b EVRYTHNG_NOT_CONNECTED if internal context is not in connected state \n
  *            \b EVRYTHNG_SUCCESS on success \n
  */
@@ -855,6 +877,7 @@ evrythng_return_t EvrythngUnsubAction(
  *
  * @return    \b EVRYTHNG_BAD_ARGS if one the arguments is a null pointer or a too long string \n
  *            \b EVRYTHNG_SUBSCRIPTION_ERROR if an error occured trying to subscribe to a topic \n
+ *            \b EVRYTHNG_ALREADY_SUBSCRIBED if subcribtion already exists \n
  *            \b EVRYTHNG_MEMORY_ERROR if memory allocation error occured \n
  *            \b EVRYTHNG_NOT_CONNECTED if internal context is not in connected state \n
  *            \b EVRYTHNG_SUCCESS on success \n
@@ -873,6 +896,7 @@ evrythng_return_t EvrythngSubActions(
  *
  * @return    \b EVRYTHNG_BAD_ARGS if one the arguments is a null pointer or a too long string \n
  *            \b EVRYTHNG_UNSUBSCRIPTION_ERROR if an error occured trying to unsubscribe from a topic \n
+ *            \b EVRYTHNG_NOT_SUBSCRIBED if trying to unsubcribe from an unexistent subscribtion \n
  *            \b EVRYTHNG_NOT_CONNECTED if internal context is not in connected state \n
  *            \b EVRYTHNG_SUCCESS on success \n
  */

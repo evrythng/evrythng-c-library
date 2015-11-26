@@ -52,11 +52,8 @@ static int sendPacket(MQTTClient* c, int length, Timer* timer)
 void MQTTClientInit(MQTTClient* c, Network* network, unsigned int command_timeout_ms,
 		unsigned char* sendbuf, size_t sendbuf_size, unsigned char* readbuf, size_t readbuf_size)
 {
-    int i;
     c->ipstack = network;
     
-    for (i = 0; i < MAX_MESSAGE_HANDLERS; ++i)
-        c->messageHandlers[i].topicFilter = 0;
     c->command_timeout_ms = command_timeout_ms;
     c->buf = sendbuf;
     c->buf_size = sendbuf_size;
@@ -64,8 +61,10 @@ void MQTTClientInit(MQTTClient* c, Network* network, unsigned int command_timeou
     c->readbuf_size = readbuf_size;
     c->isconnected = 0;
     c->ping_outstanding = 0;
-    c->defaultMessageHandler = NULL;
+    c->messageHandler = 0;
+    c->messageHandlerData = 0;
 	c->next_packetid = 1;
+
     TimerInit(&c->ping_timer);
     TimerInit(&c->pingresp_timer);
 	MutexInit(&c->mutex);
@@ -169,30 +168,13 @@ char MQTTisTopicMatched(char* topicFilter, MQTTString* topicName)
 
 int deliverMessage(MQTTClient* c, MQTTString* topicName, MQTTMessage* message)
 {
-    int i;
     int rc = MQTT_FAILURE;
 
-    // we have to find the right message handler - indexed by topic
-    for (i = 0; i < MAX_MESSAGE_HANDLERS; ++i)
-    {
-        if (c->messageHandlers[i].topicFilter != 0 && (MQTTPacket_equals(topicName, (char*)c->messageHandlers[i].topicFilter) ||
-                MQTTisTopicMatched((char*)c->messageHandlers[i].topicFilter, topicName)))
-        {
-            if (c->messageHandlers[i].fp != NULL)
-            {
-                MessageData md;
-                NewMessageData(&md, topicName, message);
-                c->messageHandlers[i].fp(&md, c->messageHandlers[i].context);
-                rc = MQTT_SUCCESS;
-            }
-        }
-    }
-    
-    if (rc == MQTT_FAILURE && c->defaultMessageHandler != NULL) 
+    if (c->messageHandler != NULL) 
     {
         MessageData md;
         NewMessageData(&md, topicName, message);
-        c->defaultMessageHandler(&md);
+        c->messageHandler(&md, c->messageHandlerData);
         rc = MQTT_SUCCESS;
     }   
     
@@ -425,7 +407,7 @@ int MQTTisConnected(MQTTClient* client)
 }
 
 
-int MQTTSubscribe(MQTTClient* c, const char* topicFilter, enum QoS qos, messageHandler messageHandler, void* context)
+int MQTTSubscribe(MQTTClient* c, const char* topicFilter, enum QoS qos)
 { 
     int rc = MQTT_FAILURE;  
     Timer timer;
@@ -453,21 +435,6 @@ int MQTTSubscribe(MQTTClient* c, const char* topicFilter, enum QoS qos, messageH
         unsigned short mypacketid;
         if (MQTTDeserialize_suback(&mypacketid, 1, &count, &grantedQoS, c->readbuf, c->readbuf_size) == 1)
             rc = grantedQoS; // 0, 1, 2 or 0x80 
-        if (rc != 0x80)
-        {
-            int i;
-            for (i = 0; i < MAX_MESSAGE_HANDLERS; ++i)
-            {
-                if (c->messageHandlers[i].topicFilter == 0)
-                {
-                    c->messageHandlers[i].topicFilter = topicFilter;
-                    c->messageHandlers[i].fp = messageHandler;
-                    c->messageHandlers[i].context = context;
-                    rc = 0;
-                    break;
-                }
-            }
-        }
     }
     else rc = MQTT_CONNECTION_LOST;
         
@@ -483,7 +450,7 @@ int MQTTUnsubscribe(MQTTClient* c, const char* topicFilter)
     Timer timer;    
     MQTTString topic = MQTTString_initializer;
     topic.cstring = (char *)topicFilter;
-    int i, len = 0;
+    int len = 0;
 
 	MutexLock(&c->mutex);
 	if (!c->isconnected)
@@ -507,13 +474,6 @@ int MQTTUnsubscribe(MQTTClient* c, const char* topicFilter)
         rc = MQTT_CONNECTION_LOST;
     
 exit:
-
-    // we have to find the right message handler - indexed by topic
-    for (i = 0; i < MAX_MESSAGE_HANDLERS; ++i)
-    {
-        if (c->messageHandlers[i].topicFilter != 0 && (MQTTPacket_equals(&topic, (char*)c->messageHandlers[i].topicFilter)))
-            c->messageHandlers[i].topicFilter = 0;
-    }
 	MutexUnlock(&c->mutex);
     return rc;
 }
@@ -582,7 +542,7 @@ int MQTTDisconnect(MQTTClient* c)
 {  
     int rc = MQTT_FAILURE;
     Timer timer;     // we might wait for incomplete incoming publishes to complete
-    int len = 0, i;
+    int len = 0;
 
 	MutexLock(&c->mutex);
     TimerInit(&timer);
@@ -593,9 +553,6 @@ int MQTTDisconnect(MQTTClient* c)
         rc = sendPacket(c, len, &timer);            // send the disconnect packet
         
     c->isconnected = 0;
-
-    for (i = 0; i < MAX_MESSAGE_HANDLERS; ++i)
-        c->messageHandlers[i].topicFilter = 0;
 
 	MutexUnlock(&c->mutex);
     return rc;
