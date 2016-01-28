@@ -18,7 +18,7 @@
 static void mqtt_thread(void* arg);
 static void message_callback(MessageData* data, void* userdata);
 static evrythng_return_t evrythng_connect_internal(evrythng_handle_t handle);
-static evrythng_return_t evrythng_disconnect_internal(evrythng_handle_t handle, int unsubscribe);
+static evrythng_return_t evrythng_disconnect_internal(evrythng_handle_t handle, int gracefull);
 
 typedef struct sub_callback_t {
     char*                   topic;
@@ -28,7 +28,7 @@ typedef struct sub_callback_t {
 } sub_callback_t;
 
 
-enum { MQTT_CONNECT, MQTT_DISCONNECT, MQTT_PUBLISH, MQTT_SUBSCRIBE, MQTT_UNSUBSCRIBE };
+enum { MQTT_NOP, MQTT_CONNECT, MQTT_DISCONNECT, MQTT_PUBLISH, MQTT_SUBSCRIBE, MQTT_UNSUBSCRIBE };
 typedef struct mqtt_op 
 {
     int op;
@@ -72,6 +72,7 @@ struct evrythng_ctx_t {
     Mutex       cb_mtx;
 
     mqtt_op     next_op;
+    Mutex       async_op_mtx;
     Mutex       next_op_mtx;
     Semaphore   next_op_ready_sem;
     Semaphore   next_op_result_sem;
@@ -130,6 +131,7 @@ evrythng_return_t EvrythngInitHandle(evrythng_handle_t* handle)
 
     MutexInit(&(*handle)->cb_mtx);
     MutexInit(&(*handle)->next_op_mtx);
+    MutexInit(&(*handle)->async_op_mtx);
     SemaphoreInit(&(*handle)->next_op_ready_sem);
     SemaphoreInit(&(*handle)->next_op_result_sem);
 
@@ -170,6 +172,7 @@ void EvrythngDestroyHandle(evrythng_handle_t handle)
 
     MutexDeinit(&handle->cb_mtx);
     MutexDeinit(&handle->next_op_mtx);
+    MutexDeinit(&handle->async_op_mtx);
     SemaphoreDeinit(&handle->next_op_ready_sem);
     SemaphoreDeinit(&handle->next_op_result_sem);
 
@@ -457,16 +460,24 @@ static evrythng_return_t evrythng_async_op(evrythng_handle_t handle, int op, con
     if (!handle)
         return EVRYTHNG_BAD_ARGS;
 
+    MutexLock(&handle->async_op_mtx);
+
     MutexLock(&handle->next_op_mtx);
 
     handle->next_op.op = op;
     handle->next_op.topic = topic;
     handle->next_op.message = message;
 
+    MutexUnlock(&handle->next_op_mtx);
+
     SemaphorePost(&handle->next_op_ready_sem);
 
     if (SemaphoreWait(&handle->next_op_result_sem, handle->command_timeout_ms * 2))
     {
+        MutexLock(&handle->next_op_mtx);
+        handle->next_op.op = MQTT_NOP;
+        SemaphoreWait(&handle->next_op_result_sem, 0);
+        MutexUnlock(&handle->next_op_mtx);
         rc = EVRYTHNG_TIMEOUT;
     }
     else
@@ -474,7 +485,7 @@ static evrythng_return_t evrythng_async_op(evrythng_handle_t handle, int op, con
         rc = handle->next_op.result;
     }
 
-    MutexUnlock(&handle->next_op_mtx);
+    MutexUnlock(&handle->async_op_mtx);
 
     return rc;
 }
@@ -600,14 +611,14 @@ evrythng_return_t EvrythngDisconnect(evrythng_handle_t handle)
 }
 
 
-evrythng_return_t evrythng_disconnect_internal(evrythng_handle_t handle, int unsubscribe)
+evrythng_return_t evrythng_disconnect_internal(evrythng_handle_t handle, int gracefull)
 {
     int rc;
 
     if (!MQTTisConnected(&handle->mqtt_client))
         return EVRYTHNG_SUCCESS;
 
-    if (unsubscribe)
+    if (gracefull)
     {
         MutexLock(&handle->cb_mtx);
 
@@ -628,14 +639,20 @@ evrythng_return_t evrythng_disconnect_internal(evrythng_handle_t handle, int uns
         }
 
         MutexUnlock(&handle->cb_mtx);
+
+        rc = MQTTDisconnect(&handle->mqtt_client);
+        if (rc != MQTT_SUCCESS)
+        {
+            error("failed to disconnect mqtt: rc = %d", rc);
+        }
+    }
+    else
+    {
+        handle->mqtt_client.isconnected = 0;
     }
 
-    rc = MQTTDisconnect(&handle->mqtt_client);
-    if (rc != MQTT_SUCCESS)
-    {
-        error("failed to disconnect mqtt: rc = %d", rc);
-    }
     NetworkDisconnect(&handle->mqtt_network);
+
     debug("MQTT disconnected");
 
     return EVRYTHNG_SUCCESS;
@@ -862,6 +879,8 @@ static void mqtt_thread(void* arg)
             continue;
         }
 
+        MutexLock(&handle->next_op_mtx);
+
         switch (handle->next_op.op)
         {
             case MQTT_CONNECT:
@@ -918,6 +937,8 @@ static void mqtt_thread(void* arg)
         }
 
         SemaphorePost(&handle->next_op_result_sem);
+
+        MutexUnlock(&handle->next_op_mtx);
     }
 
     evrythng_disconnect_internal(handle, 1);

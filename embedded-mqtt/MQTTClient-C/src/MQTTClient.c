@@ -38,13 +38,16 @@ static int sendPacket(MQTTClient* c, int length, Timer* timer)
             break;
         sent += rc;
     }
+
     if (sent == length)
     {
         TimerCountdownMS(&c->ping_timer, c->keepAliveInterval*1000); // record the fact that we have successfully sent the packet
         rc = MQTT_SUCCESS;
     }
     else
+    {
         rc = MQTT_CONNECTION_LOST;
+    }
     return rc;
 }
 
@@ -186,7 +189,7 @@ int keepalive(MQTTClient* c)
 {
     int rc = MQTT_FAILURE;
 
-    if (c->keepAliveInterval == 0)
+    if (c->keepAliveInterval == 0 || !c->isconnected)
     {
         rc = MQTT_SUCCESS;
         goto exit;
@@ -339,7 +342,9 @@ int waitfor(MQTTClient* c, int packet_type, Timer* timer)
     do
     {
         if (TimerIsExpired(timer))
+        {
             break; // we timed out
+        }
 
         rc = cycle(c, timer);
 
@@ -399,11 +404,18 @@ exit:
 }
 
 
-int MQTTisConnected(MQTTClient* client)
+int MQTTisConnected(MQTTClient* c)
 {
-    if (client)
-        return client->isconnected;
-    return 0;
+    int ret = 0;
+
+	MutexLock(&c->mutex);
+
+    if (c)
+        ret = c->isconnected;
+
+	MutexUnlock(&c->mutex);
+
+    return ret;
 }
 
 
@@ -502,7 +514,9 @@ int MQTTPublish(MQTTClient* c, const char* topicName, MQTTMessage* message)
     if (len <= 0)
         goto exit;
     if ((rc = sendPacket(c, len, &timer)) != MQTT_SUCCESS) // send the subscribe packet
+    {
         goto exit; // there was a problem
+    }
 
     if (message->qos == QOS1)
     {
@@ -517,7 +531,9 @@ int MQTTPublish(MQTTClient* c, const char* topicName, MQTTMessage* message)
             }
         }
         else
+        {
             rc = MQTT_CONNECTION_LOST;
+        }
     }
     else if (message->qos == QOS2)
     {
