@@ -33,11 +33,11 @@ static void prvMQTTEchoTask(void *pvParameters)
 	MQTTPacket_connectData connectData = MQTTPacket_connectData_initializer;
 
 	pvParameters = 0;
-	NetworkInit(&network);
+	platform_network_init(&network);
 	MQTTClientInit(&client, &network, 30000, sendbuf, sizeof(sendbuf), readbuf, sizeof(readbuf));
 
 	char* address = "iot.eclipse.org";
-	if ((rc = NetworkConnect(&network, address, 1883)) != 0)
+	if ((rc = platform_network_connect(&network, address, 1883)) != 0)
 		printf("Return code from network connect is %d\n", rc);
 
 #if defined(MQTT_TASK)

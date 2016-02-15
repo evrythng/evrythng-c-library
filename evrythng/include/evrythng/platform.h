@@ -6,15 +6,7 @@
 #if !defined(__MQTT_PLATFORM_)
 #define __MQTT_PLATFORM_
 
-#if defined(POSIX_PLATFORM)
-    #include "POSIX/types.h"
-#elif defined(WICED_PLATFORM)
-    #include "WICED/types.h"
-#elif defined(MARVELL_PLATFORM)
-    #include "marvell/types.h"
-#elif defined(FREERTOS_POSIX_PLATFORM)
-    #include "FreeRTOS_POSIX/types.h"
-#endif
+#include "platform_types.h"
 
 /* all failure return codes must be negative */
 enum returnCode 
@@ -25,37 +17,37 @@ enum returnCode
     MQTT_SUCCESS = 0 
 };
 
-void TimerInit(Timer*);
-void TimerDeinit(Timer*);
-char TimerIsExpired(Timer*);
-void TimerCountdownMS(Timer*, unsigned int);
-int  TimerLeftMS(Timer*);
+void platform_timer_init(Timer*);
+void platform_timer_deinit(Timer*);
+char platform_timer_isexpired(Timer*);
+void platform_timer_countdown(Timer*, unsigned int);
+int  platform_timer_left(Timer*);
 
-void NetworkInit(Network*);
-void NetworkSecuredInit(Network*, const char* ca_buf, size_t ca_size);
-int  NetworkConnect(Network*, char*, int);
-void NetworkDisconnect(Network*);
-int  NetworkRead(Network*, unsigned char*, int, int);
-int  NetworkWrite(Network*, unsigned char*, int, int);
+void platform_network_init(Network*);
+void platform_network_securedinit(Network*, const char* ca_buf, size_t ca_size);
+int  platform_network_connect(Network*, char*, int);
+void platform_network_disconnect(Network*);
+int  platform_network_read(Network*, unsigned char*, int, int);
+int  platform_network_write(Network*, unsigned char*, int, int);
 
-void MutexInit(Mutex*);
-void MutexDeinit(Mutex*);
-int  MutexLock(Mutex*);
-int  MutexUnlock(Mutex*);
+void platform_mutex_init(Mutex*);
+void platform_mutex_deinit(Mutex*);
+int  platform_mutex_lock(Mutex*);
+int  platform_mutex_unlock(Mutex*);
 
-void SemaphoreInit(Semaphore*);
-void SemaphoreDeinit(Semaphore*);
-int SemaphorePost(Semaphore*);
-int SemaphoreWait(Semaphore*, int);
+void platform_semaphore_init(Semaphore*);
+void platform_semaphore_deinit(Semaphore*);
+int platform_semaphore_post(Semaphore*);
+int platform_semaphore_wait(Semaphore*, int);
 
-int ThreadCreate(Thread* thread, 
+int platform_thread_create(Thread* thread, 
         int priority, 
         const char* name, 
         void (*func)(void*), 
         size_t stack_size, 
         void* arg);
-int ThreadJoin(Thread*, int);
-int ThreadDestroy(Thread*);
+int platform_thread_join(Thread*, int);
+int platform_thread_destroy(Thread*);
 
 int platform_printf(const char* fmt, ...);
 

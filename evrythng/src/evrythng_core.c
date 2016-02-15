@@ -129,11 +129,11 @@ evrythng_return_t EvrythngInitHandle(evrythng_handle_t* handle)
     (*handle)->mqtt_client.messageHandler = message_callback;
     (*handle)->mqtt_client.messageHandlerData = (void*)(*handle);
 
-    MutexInit(&(*handle)->cb_mtx);
-    MutexInit(&(*handle)->next_op_mtx);
-    MutexInit(&(*handle)->async_op_mtx);
-    SemaphoreInit(&(*handle)->next_op_ready_sem);
-    SemaphoreInit(&(*handle)->next_op_result_sem);
+    platform_mutex_init(&(*handle)->cb_mtx);
+    platform_mutex_init(&(*handle)->next_op_mtx);
+    platform_mutex_init(&(*handle)->async_op_mtx);
+    platform_semaphore_init(&(*handle)->next_op_ready_sem);
+    platform_semaphore_init(&(*handle)->next_op_result_sem);
 
     return EVRYTHNG_SUCCESS;
 }
@@ -147,15 +147,15 @@ void EvrythngDestroyHandle(evrythng_handle_t handle)
     if (handle->initialized)
     {
         handle->mqtt_thread_stop = 1;
-        ThreadJoin(&handle->mqtt_thread, 0x00FFFFFF);
-        ThreadDestroy(&handle->mqtt_thread);
+        platform_thread_join(&handle->mqtt_thread, 0x00FFFFFF);
+        platform_thread_destroy(&handle->mqtt_thread);
     }
 
     if (handle->host) platform_free(handle->host);
     if (handle->key) platform_free(handle->key);
     if (handle->client_id) platform_free(handle->client_id);
 
-    MutexLock(&handle->cb_mtx);
+    platform_mutex_lock(&handle->cb_mtx);
 
     sub_callback_t **_sub_callback = &handle->sub_callbacks;
     while (*_sub_callback) 
@@ -166,15 +166,15 @@ void EvrythngDestroyHandle(evrythng_handle_t handle)
         platform_free(_sub_callback_tmp);
     }
 
-    MutexUnlock(&handle->cb_mtx);
+    platform_mutex_unlock(&handle->cb_mtx);
 
     MQTTClientDeinit(&handle->mqtt_client);
 
-    MutexDeinit(&handle->cb_mtx);
-    MutexDeinit(&handle->next_op_mtx);
-    MutexDeinit(&handle->async_op_mtx);
-    SemaphoreDeinit(&handle->next_op_ready_sem);
-    SemaphoreDeinit(&handle->next_op_result_sem);
+    platform_mutex_deinit(&handle->cb_mtx);
+    platform_mutex_deinit(&handle->next_op_mtx);
+    platform_mutex_deinit(&handle->async_op_mtx);
+    platform_semaphore_deinit(&handle->next_op_ready_sem);
+    platform_semaphore_deinit(&handle->next_op_result_sem);
 
     platform_free(handle);
 }
@@ -313,7 +313,7 @@ static evrythng_return_t add_sub_callback(evrythng_handle_t handle, char* topic,
 {
     evrythng_return_t ret = EVRYTHNG_SUCCESS;
 
-    MutexLock(&handle->cb_mtx);
+    platform_mutex_lock(&handle->cb_mtx);
 
     char* qp_start = strstr(topic, "?pubStates=");
     int topic_len = 
@@ -355,7 +355,7 @@ static evrythng_return_t add_sub_callback(evrythng_handle_t handle, char* topic,
     (*_sub_callbacks)->next = 0;
 
 out:
-    MutexUnlock(&handle->cb_mtx);
+    platform_mutex_unlock(&handle->cb_mtx);
     return ret;
 }
 
@@ -364,7 +364,7 @@ static evrythng_return_t rm_sub_callback(evrythng_handle_t handle, char* topic)
 {
     evrythng_return_t ret = EVRYTHNG_NOT_SUBSCRIBED;
 
-    MutexLock(&handle->cb_mtx);
+    platform_mutex_lock(&handle->cb_mtx);
 
     sub_callback_t *currP, *prevP = NULL;
 
@@ -404,7 +404,7 @@ static evrythng_return_t rm_sub_callback(evrythng_handle_t handle, char* topic)
         }
     }
 
-    MutexUnlock(&handle->cb_mtx);
+    platform_mutex_unlock(&handle->cb_mtx);
     return ret;
 }
 
@@ -413,7 +413,7 @@ static sub_callback* get_sub_callback(evrythng_handle_t handle, MQTTString* topi
 {
     sub_callback* cb = 0;
 
-    MutexLock(&handle->cb_mtx);
+    platform_mutex_lock(&handle->cb_mtx);
 
     sub_callback_t *_sub_callback = handle->sub_callbacks;
     while (_sub_callback) 
@@ -426,7 +426,7 @@ static sub_callback* get_sub_callback(evrythng_handle_t handle, MQTTString* topi
         _sub_callback = _sub_callback->next;
     }
 
-    MutexUnlock(&handle->cb_mtx);
+    platform_mutex_unlock(&handle->cb_mtx);
 
     return cb;
 }
@@ -460,24 +460,24 @@ static evrythng_return_t evrythng_async_op(evrythng_handle_t handle, int op, con
     if (!handle)
         return EVRYTHNG_BAD_ARGS;
 
-    MutexLock(&handle->async_op_mtx);
+    platform_mutex_lock(&handle->async_op_mtx);
 
-    MutexLock(&handle->next_op_mtx);
+    platform_mutex_lock(&handle->next_op_mtx);
 
     handle->next_op.op = op;
     handle->next_op.topic = topic;
     handle->next_op.message = message;
 
-    MutexUnlock(&handle->next_op_mtx);
+    platform_mutex_unlock(&handle->next_op_mtx);
 
-    SemaphorePost(&handle->next_op_ready_sem);
+    platform_semaphore_post(&handle->next_op_ready_sem);
 
-    if (SemaphoreWait(&handle->next_op_result_sem, handle->command_timeout_ms * 2))
+    if (platform_semaphore_wait(&handle->next_op_result_sem, handle->command_timeout_ms * 2))
     {
-        MutexLock(&handle->next_op_mtx);
+        platform_mutex_lock(&handle->next_op_mtx);
         handle->next_op.op = MQTT_NOP;
-        SemaphoreWait(&handle->next_op_result_sem, 0);
-        MutexUnlock(&handle->next_op_mtx);
+        platform_semaphore_wait(&handle->next_op_result_sem, 0);
+        platform_mutex_unlock(&handle->next_op_mtx);
         rc = EVRYTHNG_TIMEOUT;
     }
     else
@@ -485,7 +485,7 @@ static evrythng_return_t evrythng_async_op(evrythng_handle_t handle, int op, con
         rc = handle->next_op.result;
     }
 
-    MutexUnlock(&handle->async_op_mtx);
+    platform_mutex_unlock(&handle->async_op_mtx);
 
     return rc;
 }
@@ -512,7 +512,7 @@ evrythng_return_t EvrythngConnect(evrythng_handle_t handle)
             debug("client ID: %s", handle->client_id);
         }
 
-        ThreadCreate(&handle->mqtt_thread, handle->mqtt_thread_priority, "mqtt_thread", mqtt_thread, handle->mqtt_thread_stacksize, (void*)handle);
+        platform_thread_create(&handle->mqtt_thread, handle->mqtt_thread_priority, "mqtt_thread", mqtt_thread, handle->mqtt_thread_stacksize, (void*)handle);
 
         handle->initialized = 1;
     }
@@ -538,18 +538,18 @@ evrythng_return_t evrythng_connect_internal(evrythng_handle_t handle)
     }
 
     if (handle->secure_connection)
-        NetworkSecuredInit(&handle->mqtt_network, handle->ca_buf, handle->ca_size);
+        platform_network_securedinit(&handle->mqtt_network, handle->ca_buf, handle->ca_size);
     else
-        NetworkInit(&handle->mqtt_network);
+        platform_network_init(&handle->mqtt_network);
 
     int attempt;
     for (attempt = 1; attempt <= 3; attempt++)
     {
         debug("connecting to host: %s, port: %d (%d)", handle->host, handle->port, attempt);
-        if (NetworkConnect(&handle->mqtt_network, handle->host, handle->port))
+        if (platform_network_connect(&handle->mqtt_network, handle->host, handle->port))
         {
             error("Failed to establish network connection");
-            NetworkDisconnect(&handle->mqtt_network);
+            platform_network_disconnect(&handle->mqtt_network);
             continue;
         }
         debug("network connection established");
@@ -557,7 +557,7 @@ evrythng_return_t evrythng_connect_internal(evrythng_handle_t handle)
         if ((rc = MQTTConnect(&handle->mqtt_client, &handle->mqtt_conn_opts)) != MQTT_SUCCESS)
         {
             error("Failed to connect, return code %d", rc);
-            NetworkDisconnect(&handle->mqtt_network);
+            platform_network_disconnect(&handle->mqtt_network);
             continue;
         }
         debug("MQTT connected");
@@ -570,7 +570,7 @@ evrythng_return_t evrythng_connect_internal(evrythng_handle_t handle)
     }
 
 
-    MutexLock(&handle->cb_mtx);
+    platform_mutex_lock(&handle->cb_mtx);
 
     sub_callback_t* _sub_callback = handle->sub_callbacks;
     while (_sub_callback) 
@@ -590,7 +590,7 @@ evrythng_return_t evrythng_connect_internal(evrythng_handle_t handle)
         }
         _sub_callback = _sub_callback->next;
     }
-    MutexUnlock(&handle->cb_mtx);
+    platform_mutex_unlock(&handle->cb_mtx);
 
     return EVRYTHNG_SUCCESS;
 }
@@ -620,7 +620,7 @@ evrythng_return_t evrythng_disconnect_internal(evrythng_handle_t handle, int gra
 
     if (gracefull)
     {
-        MutexLock(&handle->cb_mtx);
+        platform_mutex_lock(&handle->cb_mtx);
 
         sub_callback_t* _sub_callback = handle->sub_callbacks;
         while (_sub_callback) 
@@ -638,7 +638,7 @@ evrythng_return_t evrythng_disconnect_internal(evrythng_handle_t handle, int gra
             _sub_callback = _sub_callback->next;
         }
 
-        MutexUnlock(&handle->cb_mtx);
+        platform_mutex_unlock(&handle->cb_mtx);
 
         rc = MQTTDisconnect(&handle->mqtt_client);
         if (rc != MQTT_SUCCESS)
@@ -651,7 +651,7 @@ evrythng_return_t evrythng_disconnect_internal(evrythng_handle_t handle, int gra
         handle->mqtt_client.isconnected = 0;
     }
 
-    NetworkDisconnect(&handle->mqtt_network);
+    platform_network_disconnect(&handle->mqtt_network);
 
     debug("MQTT disconnected");
 
@@ -872,14 +872,14 @@ static void mqtt_thread(void* arg)
             }
         }
 
-        if (SemaphoreWait(&handle->next_op_ready_sem, 0))
+        if (platform_semaphore_wait(&handle->next_op_ready_sem, 0))
         {
             rc = MQTTYield(&handle->mqtt_client, 300);
             platform_sleep(100);
             continue;
         }
 
-        MutexLock(&handle->next_op_mtx);
+        platform_mutex_lock(&handle->next_op_mtx);
 
         switch (handle->next_op.op)
         {
@@ -936,9 +936,9 @@ static void mqtt_thread(void* arg)
                 break;
         }
 
-        SemaphorePost(&handle->next_op_result_sem);
+        platform_semaphore_post(&handle->next_op_result_sem);
 
-        MutexUnlock(&handle->next_op_mtx);
+        platform_mutex_unlock(&handle->next_op_mtx);
     }
 
     evrythng_disconnect_internal(handle, 1);
