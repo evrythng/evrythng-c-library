@@ -374,8 +374,10 @@ int MQTTConnect(MQTTClient* c, MQTTPacket_connectData* options)
     if (options == 0)
         options = &default_options; /* set default options if none were supplied */
     
+    c->ping_outstanding = 0;
     c->keepAliveInterval = options->keepAliveInterval;
     platform_timer_countdown(&c->ping_timer, c->keepAliveInterval*1000);
+
     if ((len = MQTTSerialize_connect(c->buf, c->buf_size, options)) <= 0)
         goto exit;
     if ((rc = sendPacket(c, len, &connect_timer)) != MQTT_SUCCESS)  // send the connect packet
