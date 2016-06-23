@@ -119,8 +119,14 @@ static int readPacket(MQTTClient* c, Timer* timer)
     int rem_len = 0;
 
     /* 1. read the header byte.  This has the packet type in it */
-    if ((rc = platform_network_read(c->ipstack, c->readbuf, 1, platform_timer_left(timer))) != 1)
+	int read_bytes = platform_network_read(c->ipstack, c->readbuf, 1, platform_timer_left(timer));
+
+	if (read_bytes != 1) 
+	{
+		if (read_bytes == 0) 
+			rc = MQTT_CONNECTION_LOST;
         goto exit;
+	}
 
     len = 1;
     /* 2. read the remaining length.  This is variable in itself */
@@ -229,11 +235,15 @@ int cycle(MQTTClient* c, Timer* timer)
     Timer t;
     platform_timer_init(&t);
 
-    // read the socket, see what work is due
-    short packet_type = readPacket(c, timer);
-    
-    int len = 0, rc = MQTT_SUCCESS;
+    int len = 0, packet_type, rc = MQTT_SUCCESS;
 
+    // read the socket, see what work is due
+    if ((packet_type = readPacket(c, timer)) == MQTT_CONNECTION_LOST)
+	{
+		rc = MQTT_CONNECTION_LOST;
+		goto exit;
+	}
+    
     switch (packet_type)
     {
         case CONNACK:
@@ -296,15 +306,16 @@ int cycle(MQTTClient* c, Timer* timer)
     if (c->ping_outstanding && platform_timer_isexpired(&c->pingresp_timer))
     {
         c->ping_outstanding = 0;
+		platform_printf("ping response was not received within keepalive timeout of %d\n", 
+                c->keepAliveInterval);
         rc = MQTT_CONNECTION_LOST;
     }
 
 exit:
-    if (packet_type == 0)
-        rc = MQTT_CONNECTION_LOST;
-    else if (rc == MQTT_SUCCESS)
-        rc = packet_type;
-    return rc;
+	if (rc == MQTT_SUCCESS)
+		rc = packet_type;
+
+	return rc;
 }
 
 
@@ -450,7 +461,10 @@ int MQTTSubscribe(MQTTClient* c, const char* topicFilter, enum QoS qos)
         if (MQTTDeserialize_suback(&mypacketid, 1, &count, &grantedQoS, c->readbuf, c->readbuf_size) == 1)
             rc = grantedQoS; // 0, 1, 2 or 0x80 
     }
-    else rc = MQTT_CONNECTION_LOST;
+    else 
+    {
+		rc = MQTT_CONNECTION_LOST;
+	}
         
 exit:
 	platform_mutex_unlock(&c->mutex);
@@ -484,8 +498,10 @@ int MQTTUnsubscribe(MQTTClient* c, const char* topicFilter)
         if (MQTTDeserialize_unsuback(&mypacketid, c->readbuf, c->readbuf_size) == 1)
             rc = 0; 
     }
-    else
+    else 
+    {
         rc = MQTT_CONNECTION_LOST;
+	}
     
 exit:
 	platform_mutex_unlock(&c->mutex);
@@ -546,8 +562,10 @@ int MQTTPublish(MQTTClient* c, const char* topicName, MQTTMessage* message)
             if (MQTTDeserialize_ack(&type, &dup, &mypacketid, c->readbuf, c->readbuf_size) != 1)
                 rc = MQTT_FAILURE;
         }
-        else
+        else 
+        {
             rc = MQTT_CONNECTION_LOST;
+		}
     }
     
 exit:
