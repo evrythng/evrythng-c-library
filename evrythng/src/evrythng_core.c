@@ -490,6 +490,8 @@ static evrythng_return_t evrythng_async_op(evrythng_handle_t handle, int op, con
     return rc;
 }
 
+#define MQTT_CLIENTID_LEN 23
+static const char* clientid_charset = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
 evrythng_return_t EvrythngConnect(evrythng_handle_t handle)
 {
@@ -501,13 +503,14 @@ evrythng_return_t EvrythngConnect(evrythng_handle_t handle)
         if (!handle->client_id)
         {
             int i;
-            handle->client_id = (char*)platform_malloc(10);
+            handle->client_id = (char*)platform_malloc(MQTT_CLIENTID_LEN+1);
             if (!handle->client_id)
                 return EVRYTHNG_MEMORY_ERROR;
-            memset(handle->client_id, 0, 10);
+            memset(handle->client_id, 0, MQTT_CLIENTID_LEN+1);
 
-            for (i = 0; i < 9; i++)
-                handle->client_id[i] = '0' + rand() % 10;
+            for (i = 0; i < MQTT_CLIENTID_LEN; i++)
+                handle->client_id[i] = clientid_charset[platform_rand() % strlen(clientid_charset)];
+
             handle->mqtt_conn_opts.clientID.cstring = handle->client_id;
             debug("client ID: %s", handle->client_id);
         }

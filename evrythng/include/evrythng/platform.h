@@ -57,4 +57,6 @@ void  platform_free(void* memory);
 
 void platform_sleep(int ms);
 
+int platform_rand();
+
 #endif //__MQTT_PLATFORM_
