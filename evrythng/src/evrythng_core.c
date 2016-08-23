@@ -34,6 +34,7 @@ typedef struct mqtt_op
     int op;
     const char* topic;
     MQTTMessage* message;
+    sub_callback* callback;
     evrythng_return_t result;
 } mqtt_op;
 
@@ -68,8 +69,6 @@ struct evrythng_ctx_t {
     MQTTPacket_connectData  mqtt_conn_opts;
 
     sub_callback_t *sub_callbacks;
-
-    Mutex       cb_mtx;
 
     mqtt_op     next_op;
     Mutex       async_op_mtx;
@@ -129,7 +128,6 @@ evrythng_return_t EvrythngInitHandle(evrythng_handle_t* handle)
     (*handle)->mqtt_client.messageHandler = message_callback;
     (*handle)->mqtt_client.messageHandlerData = (void*)(*handle);
 
-    platform_mutex_init(&(*handle)->cb_mtx);
     platform_mutex_init(&(*handle)->next_op_mtx);
     platform_mutex_init(&(*handle)->async_op_mtx);
     platform_semaphore_init(&(*handle)->next_op_ready_sem);
@@ -155,8 +153,6 @@ void EvrythngDestroyHandle(evrythng_handle_t handle)
     if (handle->key) platform_free(handle->key);
     if (handle->client_id) platform_free(handle->client_id);
 
-    platform_mutex_lock(&handle->cb_mtx);
-
     sub_callback_t **_sub_callback = &handle->sub_callbacks;
     while (*_sub_callback) 
     {
@@ -166,11 +162,8 @@ void EvrythngDestroyHandle(evrythng_handle_t handle)
         platform_free(_sub_callback_tmp);
     }
 
-    platform_mutex_unlock(&handle->cb_mtx);
-
     MQTTClientDeinit(&handle->mqtt_client);
 
-    platform_mutex_deinit(&handle->cb_mtx);
     platform_mutex_deinit(&handle->next_op_mtx);
     platform_mutex_deinit(&handle->async_op_mtx);
     platform_semaphore_deinit(&handle->next_op_ready_sem);
@@ -309,11 +302,9 @@ evrythng_return_t EvrythngSetThreadStacksize(evrythng_handle_t handle, int stack
 }
 
 
-static evrythng_return_t add_sub_callback(evrythng_handle_t handle, char* topic, int qos, sub_callback *callback)
+static evrythng_return_t add_sub_callback(evrythng_handle_t handle, const char* topic, int qos, sub_callback *callback)
 {
     evrythng_return_t ret = EVRYTHNG_SUCCESS;
-
-    platform_mutex_lock(&handle->cb_mtx);
 
     char* qp_start = strstr(topic, "?pubStates=");
     int topic_len = 
@@ -355,16 +346,13 @@ static evrythng_return_t add_sub_callback(evrythng_handle_t handle, char* topic,
     (*_sub_callbacks)->next = 0;
 
 out:
-    platform_mutex_unlock(&handle->cb_mtx);
     return ret;
 }
 
 
-static evrythng_return_t rm_sub_callback(evrythng_handle_t handle, char* topic)
+static evrythng_return_t rm_sub_callback(evrythng_handle_t handle, const char* topic, char* deleted_topic)
 {
     evrythng_return_t ret = EVRYTHNG_NOT_SUBSCRIBED;
-
-    platform_mutex_lock(&handle->cb_mtx);
 
     sub_callback_t *currP, *prevP = NULL;
 
@@ -393,8 +381,10 @@ static evrythng_return_t rm_sub_callback(evrythng_handle_t handle, char* topic)
                 prevP->next = currP->next;
             }
 
+            if (deleted_topic)
+                strcpy(deleted_topic, currP->topic);
+            
             /* Deallocate the node. */
-            strcpy(topic, currP->topic);
             platform_free(currP->topic);
             platform_free(currP);
 
@@ -404,7 +394,6 @@ static evrythng_return_t rm_sub_callback(evrythng_handle_t handle, char* topic)
         }
     }
 
-    platform_mutex_unlock(&handle->cb_mtx);
     return ret;
 }
 
@@ -412,8 +401,6 @@ static evrythng_return_t rm_sub_callback(evrythng_handle_t handle, char* topic)
 static sub_callback* get_sub_callback(evrythng_handle_t handle, MQTTString* topic)
 {
     sub_callback* cb = 0;
-
-    platform_mutex_lock(&handle->cb_mtx);
 
     sub_callback_t *_sub_callback = handle->sub_callbacks;
     while (_sub_callback) 
@@ -425,8 +412,6 @@ static sub_callback* get_sub_callback(evrythng_handle_t handle, MQTTString* topi
         }
         _sub_callback = _sub_callback->next;
     }
-
-    platform_mutex_unlock(&handle->cb_mtx);
 
     return cb;
 }
@@ -453,7 +438,7 @@ void message_callback(MessageData* data, void* userdata)
 }
 
 
-static evrythng_return_t evrythng_async_op(evrythng_handle_t handle, int op, const char* topic, MQTTMessage* message)
+static evrythng_return_t evrythng_async_op(evrythng_handle_t handle, int op, const char* topic, MQTTMessage* message, sub_callback *callback)
 {
     evrythng_return_t rc;
 
@@ -467,6 +452,7 @@ static evrythng_return_t evrythng_async_op(evrythng_handle_t handle, int op, con
     handle->next_op.op = op;
     handle->next_op.topic = topic;
     handle->next_op.message = message;
+    handle->next_op.callback = callback;
 
     platform_mutex_unlock(&handle->next_op_mtx);
 
@@ -526,7 +512,7 @@ evrythng_return_t EvrythngConnect(evrythng_handle_t handle)
         return EVRYTHNG_SUCCESS;
     }
 
-    return evrythng_async_op(handle, MQTT_CONNECT, 0, 0);
+    return evrythng_async_op(handle, MQTT_CONNECT, 0, 0, 0);
 }
 
 
@@ -573,8 +559,6 @@ evrythng_return_t evrythng_connect_internal(evrythng_handle_t handle)
     }
 
 
-    platform_mutex_lock(&handle->cb_mtx);
-
     sub_callback_t* _sub_callback = handle->sub_callbacks;
     while (_sub_callback) 
     {
@@ -593,7 +577,6 @@ evrythng_return_t evrythng_connect_internal(evrythng_handle_t handle)
         }
         _sub_callback = _sub_callback->next;
     }
-    platform_mutex_unlock(&handle->cb_mtx);
 
     return EVRYTHNG_SUCCESS;
 }
@@ -610,7 +593,7 @@ evrythng_return_t EvrythngDisconnect(evrythng_handle_t handle)
     if (!MQTTisConnected(&handle->mqtt_client))
         return EVRYTHNG_SUCCESS;
 
-    return evrythng_async_op(handle, MQTT_DISCONNECT, 0, 0);
+    return evrythng_async_op(handle, MQTT_DISCONNECT, 0, 0, 0);
 }
 
 
@@ -623,8 +606,6 @@ evrythng_return_t evrythng_disconnect_internal(evrythng_handle_t handle, int gra
 
     if (gracefull)
     {
-        platform_mutex_lock(&handle->cb_mtx);
-
         sub_callback_t* _sub_callback = handle->sub_callbacks;
         while (_sub_callback) 
         {
@@ -640,8 +621,6 @@ evrythng_return_t evrythng_disconnect_internal(evrythng_handle_t handle, int gra
             }
             _sub_callback = _sub_callback->next;
         }
-
-        platform_mutex_unlock(&handle->cb_mtx);
 
         rc = MQTTDisconnect(&handle->mqtt_client);
         if (rc != MQTT_SUCCESS)
@@ -720,7 +699,7 @@ evrythng_return_t evrythng_publish(
         .payloadlen = strlen(property_json)
     };
 
-    return evrythng_async_op(handle, MQTT_PUBLISH, pub_topic, &msg);
+    return evrythng_async_op(handle, MQTT_PUBLISH, pub_topic, &msg, 0);
 }
 
 
@@ -770,22 +749,7 @@ evrythng_return_t evrythng_subscribe(
         }
     }
 
-    evrythng_return_t ret = add_sub_callback(handle, sub_topic, handle->qos, callback);
-    if (ret != EVRYTHNG_SUCCESS)
-    {
-        error("could not add sub topic: %d", ret);
-        return ret;
-    }
-
-    ret = evrythng_async_op(handle, MQTT_SUBSCRIBE, sub_topic, 0);
-    if (ret != EVRYTHNG_SUCCESS) 
-    {
-        debug("subscription failed, ret = %d", ret);
-        rm_sub_callback(handle, sub_topic);
-        return ret;
-    }
-
-    return EVRYTHNG_SUCCESS;
+    return evrythng_async_op(handle, MQTT_SUBSCRIBE, sub_topic, 0, callback);
 }
 
 
@@ -833,19 +797,13 @@ evrythng_return_t evrythng_unsubscribe(
         }
     }
 
-    evrythng_return_t ret = rm_sub_callback(handle, unsub_topic);
-    if (ret != EVRYTHNG_SUCCESS)
-    {
-        debug("could not remove unsub topic: %d", ret);
-        return ret;
-    }
-
-    return evrythng_async_op(handle, MQTT_UNSUBSCRIBE, unsub_topic, 0);
+    return evrythng_async_op(handle, MQTT_UNSUBSCRIBE, unsub_topic, 0, 0);
 }
 
 
 static void mqtt_thread(void* arg)
 {
+    char actual_topic[TOPIC_MAX_LEN];
     int rc = MQTT_SUCCESS;
 
     evrythng_handle_t handle = (evrythng_handle_t)arg;
@@ -911,27 +869,53 @@ static void mqtt_thread(void* arg)
                 break;
 
             case MQTT_SUBSCRIBE:
-                rc = MQTTSubscribe(&handle->mqtt_client, 
-                        handle->next_op.topic, 
-                        handle->qos);
-                if (rc >= 0) 
+                rc = add_sub_callback(handle, handle->next_op.topic, 
+                        handle->qos, handle->next_op.callback);
+
+                if (rc != EVRYTHNG_SUCCESS)
                 {
-                    debug("successfully subscribed to %s", handle->next_op.topic);
-                    handle->next_op.result = EVRYTHNG_SUCCESS;
+                    error("could not add sub topic: %d", rc);
+                    handle->next_op.result = rc;
                 }
                 else
-                    handle->next_op.result = EVRYTHNG_SUBSCRIPTION_ERROR;
+                {
+                    rc = MQTTSubscribe(&handle->mqtt_client, 
+                            handle->next_op.topic, 
+                            handle->qos);
+                    if (rc >= 0) 
+                    {
+                        debug("successfully subscribed to %s", handle->next_op.topic);
+                        handle->next_op.result = EVRYTHNG_SUCCESS;
+                    }
+                    else
+                    {
+                        debug("subscription failed: %d", rc);
+                        handle->next_op.result = EVRYTHNG_SUBSCRIPTION_ERROR;
+                        rm_sub_callback(handle, handle->next_op.topic, 0);
+                    }
+                }
                 break;
 
             case MQTT_UNSUBSCRIBE:
-                rc = MQTTUnsubscribe(&handle->mqtt_client, handle->next_op.topic);
-                if (rc >= 0) 
+                rc = rm_sub_callback(handle, handle->next_op.topic, actual_topic);
+                if (rc != EVRYTHNG_SUCCESS)
                 {
-                    debug("successfully unsubscribed from %s", handle->next_op.topic);
-                    handle->next_op.result = EVRYTHNG_SUCCESS;
+                    debug("could not remove callback for topic: %s", handle->next_op.topic);
+                    handle->next_op.result = rc;
                 }
                 else
-                    handle->next_op.result = EVRYTHNG_UNSUBSCRIPTION_ERROR;
+                {
+                    rc = MQTTUnsubscribe(&handle->mqtt_client, actual_topic);
+                    if (rc >= 0) 
+                    {
+                        debug("successfully unsubscribed from %s", actual_topic);
+                        handle->next_op.result = EVRYTHNG_SUCCESS;
+                    }
+                    else
+                    {
+                        handle->next_op.result = EVRYTHNG_UNSUBSCRIPTION_ERROR;
+                    }
+                }
                 break;
 
             default:
