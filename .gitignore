@@ -37,3 +37,5 @@ doxygen_sqlite3.db
 tags
 cscope.*
 Config
+.DS_Store
+.idea
