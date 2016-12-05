@@ -24,6 +24,8 @@
 #include <stdlib.h>
 #include <stdarg.h>
 
+#define EVRYTHNG_MAJOR_VERSION 1
+#define EVRYTHNG_MINOR_VERSION 1
 
 typedef enum _evrythng_return_t 
 {
