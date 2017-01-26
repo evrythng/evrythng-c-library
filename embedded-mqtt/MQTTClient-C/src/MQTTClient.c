@@ -83,29 +83,33 @@ void MQTTClientDeinit(MQTTClient *c)
 }
 
 
-static int decodePacket(MQTTClient* c, int* value, int timeout)
+static int readRemainingLength(MQTTClient* c, int* value, int timeout)
 {
     unsigned char i;
     int multiplier = 1;
     int len = 0;
+    int rc;
     const int MAX_NO_OF_REMAINING_LENGTH_BYTES = 4;
 
     *value = 0;
     do
     {
-        int rc = MQTTPACKET_READ_ERROR;
-
-        if (++len > MAX_NO_OF_REMAINING_LENGTH_BYTES)
-        {
-            rc = MQTTPACKET_READ_ERROR; /* bad data */
+        if (++len > MAX_NO_OF_REMAINING_LENGTH_BYTES) {
+            len = 0; /* bad data */
             goto exit;
         }
+
         rc = platform_network_read(c->ipstack, &i, 1, timeout);
-        if (rc != 1)
+        if (rc != 1) {
+            len = 0;
             goto exit;
+        }
+
         *value += (i & 127) * multiplier;
         multiplier *= 128;
+
     } while ((i & 128) != 0);
+
 exit:
     return len;
 }
@@ -121,21 +125,27 @@ static int readPacket(MQTTClient* c, Timer* timer)
     /* 1. read the header byte.  This has the packet type in it */
 	int read_bytes = platform_network_read(c->ipstack, c->readbuf, 1, platform_timer_left(timer));
 
-	if (read_bytes != 1) 
-	{
-		if (read_bytes == 0) 
-			rc = MQTT_CONNECTION_LOST;
+    if (read_bytes != 1) {
+        if (read_bytes == 0)
+            rc = MQTT_CONNECTION_LOST;
         goto exit;
-	}
+    }
 
     len = 1;
     /* 2. read the remaining length.  This is variable in itself */
-    decodePacket(c, &rem_len, platform_timer_left(timer));
+    read_bytes = readRemainingLength(c, &rem_len, platform_timer_left(timer));
+    if (read_bytes == 0) {
+        rc = MQTT_CONNECTION_LOST;
+        goto exit;
+    }
+
     len += MQTTPacket_encode(c->readbuf + 1, rem_len); /* put the original remaining length back into the buffer */
 
     /* 3. read the rest of the buffer using a callback to supply the rest of the data */
-    if (rem_len > 0 && (platform_network_read(c->ipstack, c->readbuf + len, rem_len, platform_timer_left(timer)) != rem_len))
+    if (rem_len > 0 && (platform_network_read(c->ipstack, c->readbuf + len, rem_len, platform_timer_left(timer)) != rem_len)) {
+        rc = MQTT_CONNECTION_LOST;
         goto exit;
+    }
 
     header.byte = c->readbuf[0];
     rc = header.bits.type;
