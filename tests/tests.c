@@ -385,10 +385,114 @@ void test_pubsuball_actions(CuTest* tc)
     END_SINGLE_CONNECTION
 }
 
+void test_connect_bad_clientid(CuTest* tc)
+{
+    PRINT_START_MEM_STATS 
+    evrythng_handle_t h1;
+    common_tcp_init_handle(&h1);
+    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, EvrythngSetClientId(h1, ""));
+    CuAssertIntEquals(tc, EVRYTHNG_CLIENT_ID_REJECTED, EvrythngConnect(h1));
+    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, EvrythngDisconnect(h1));
+    EvrythngDestroyHandle(h1);
+    PRINT_END_MEM_STATS
+}
+
+void test_connect_bad_apikey(CuTest* tc)
+{
+    PRINT_START_MEM_STATS 
+    evrythng_handle_t h1;
+    common_tcp_init_handle(&h1);
+    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, EvrythngSetKey(h1, "123"));
+    CuAssertIntEquals(tc, EVRYTHNG_AUTH_FAILED, EvrythngConnect(h1));
+    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, EvrythngDisconnect(h1));
+    EvrythngDestroyHandle(h1);
+    PRINT_END_MEM_STATS
+}
+
+void test_subscribe_bad_thngid(CuTest* tc)
+{
+    PRINT_START_MEM_STATS 
+    evrythng_handle_t h1;
+    common_tcp_init_handle(&h1);
+    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, EvrythngConnect(h1));
+    CuAssertIntEquals(tc, EVRYTHNG_SUBSCRIPTION_ERROR, EvrythngSubThngProperty(h1, "thng", PROPERTY_1, 0, test_sub_callback));
+    CuAssertIntEquals(tc, EVRYTHNG_SUBSCRIPTION_ERROR, EvrythngSubThngProperties(h1, "thng", 0, test_sub_callback));
+    CuAssertIntEquals(tc, EVRYTHNG_SUBSCRIPTION_ERROR, EvrythngSubThngAction(h1, "thng", ACTION_1, 0, test_sub_callback));
+    CuAssertIntEquals(tc, EVRYTHNG_SUBSCRIPTION_ERROR, EvrythngSubThngActions(h1, "rkuej", 0, test_sub_callback));
+    CuAssertIntEquals(tc, EVRYTHNG_SUBSCRIPTION_ERROR, EvrythngSubThngLocation(h1, "thng", 0, test_sub_callback));
+    CuAssertIntEquals(tc, EVRYTHNG_SUBSCRIPTION_ERROR, EvrythngSubProductProperty(h1, "product", PROPERTY_1, 0, test_sub_callback));
+    CuAssertIntEquals(tc, EVRYTHNG_SUBSCRIPTION_ERROR, EvrythngSubProductProperties(h1, "product", 0, test_sub_callback));
+    CuAssertIntEquals(tc, EVRYTHNG_SUBSCRIPTION_ERROR, EvrythngSubProductAction(h1, "product", PROPERTY_1, 0, test_sub_callback));
+    CuAssertIntEquals(tc, EVRYTHNG_SUBSCRIPTION_ERROR, EvrythngSubProductActions(h1, "product", 0, test_sub_callback));
+    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, EvrythngDisconnect(h1));
+    EvrythngDestroyHandle(h1);
+    PRINT_END_MEM_STATS
+}
+
+void test_subscribe_bad_entity_name(CuTest* tc)
+{
+    PRINT_START_MEM_STATS 
+    evrythng_handle_t h1;
+    common_tcp_init_handle(&h1);
+    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, EvrythngConnect(h1));
+    CuAssertIntEquals(tc, EVRYTHNG_SUBSCRIPTION_ERROR, EvrythngSubThngProperty(h1, THNG_1, "prop", 0, test_sub_callback));
+    CuAssertIntEquals(tc, EVRYTHNG_SUBSCRIPTION_ERROR, EvrythngSubThngAction(h1, THNG_1, "act", 0, test_sub_callback));
+    CuAssertIntEquals(tc, EVRYTHNG_SUBSCRIPTION_ERROR, EvrythngSubProductProperty(h1, PRODUCT_1, "prop", 0, test_sub_callback));
+    CuAssertIntEquals(tc, EVRYTHNG_SUBSCRIPTION_ERROR, EvrythngSubProductAction(h1, PRODUCT_1, "prop", 0, test_sub_callback));
+    CuAssertIntEquals(tc, EVRYTHNG_SUBSCRIPTION_ERROR, EvrythngSubAction(h1, "act", 0, test_sub_callback));
+    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, EvrythngDisconnect(h1));
+    EvrythngDestroyHandle(h1);
+    PRINT_END_MEM_STATS
+}
+
+void test_publish_bad_thngid(CuTest* tc)
+{
+    PRINT_START_MEM_STATS 
+    evrythng_handle_t h1;
+    common_tcp_init_handle(&h1);
+    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, EvrythngConnect(h1));
+    CuAssertIntEquals(tc, EVRYTHNG_PUBLISH_ERROR, EvrythngPubThngProperty(h1, "rt", PROPERTY_1, PROPERTY_VALUE_JSON));
+    CuAssertIntEquals(tc, EVRYTHNG_PUBLISH_ERROR, EvrythngPubThngProperties(h1, "rt", PROPERTY_VALUE_JSON));
+    CuAssertIntEquals(tc, EVRYTHNG_PUBLISH_ERROR, EvrythngPubThngAction(h1, "rt", ACTION_1, PROPERTY_VALUE_JSON));
+    CuAssertIntEquals(tc, EVRYTHNG_PUBLISH_ERROR, EvrythngPubThngActions(h1, "rt", PROPERTY_VALUE_JSON));
+    CuAssertIntEquals(tc, EVRYTHNG_PUBLISH_ERROR, EvrythngPubThngLocation(h1, "rt", PROPERTY_VALUE_JSON));
+    CuAssertIntEquals(tc, EVRYTHNG_PUBLISH_ERROR, EvrythngPubProductProperty(h1, "rt", PROPERTY_1, PROPERTY_VALUE_JSON));
+    CuAssertIntEquals(tc, EVRYTHNG_PUBLISH_ERROR, EvrythngPubProductProperties(h1, "rt", PROPERTY_VALUE_JSON));
+    CuAssertIntEquals(tc, EVRYTHNG_PUBLISH_ERROR, EvrythngPubProductAction(h1, "rt", ACTION_1, PROPERTY_VALUE_JSON));
+    CuAssertIntEquals(tc, EVRYTHNG_PUBLISH_ERROR, EvrythngPubProductActions(h1, "rt", PROPERTY_VALUE_JSON));
+    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, EvrythngDisconnect(h1));
+    EvrythngDestroyHandle(h1);
+    PRINT_END_MEM_STATS
+}
+
+void test_publish_bad_entity(CuTest* tc)
+{
+    PRINT_START_MEM_STATS 
+    evrythng_handle_t h1;
+    common_tcp_init_handle(&h1);
+    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, EvrythngConnect(h1));
+    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, EvrythngPubThngProperty(h1, THNG_1, "new", PROPERTY_VALUE_JSON));
+    CuAssertIntEquals(tc, EVRYTHNG_PUBLISH_ERROR, EvrythngPubThngAction(h1, THNG_1, "act", PROPERTY_VALUE_JSON));
+    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, EvrythngPubProductProperty(h1, PRODUCT_1, "new", PROPERTY_VALUE_JSON));
+    CuAssertIntEquals(tc, EVRYTHNG_PUBLISH_ERROR, EvrythngPubProductAction(h1, PRODUCT_1, "act", PROPERTY_VALUE_JSON));
+    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, EvrythngDisconnect(h1));
+    EvrythngDestroyHandle(h1);
+    PRINT_END_MEM_STATS
+}
+
 CuSuite* CuGetSuite(void)
 {
 	CuSuite* suite = CuSuiteNew();
 
+	SUITE_ADD_TEST(suite, test_connect_bad_clientid);
+	SUITE_ADD_TEST(suite, test_connect_bad_apikey);
+
+	SUITE_ADD_TEST(suite, test_subscribe_bad_thngid);
+	SUITE_ADD_TEST(suite, test_subscribe_bad_entity_name);
+
+	SUITE_ADD_TEST(suite, test_publish_bad_thngid);
+	SUITE_ADD_TEST(suite, test_publish_bad_entity);
+    
 #if 1
 	SUITE_ADD_TEST(suite, test_init_handle_ok);
 	SUITE_ADD_TEST(suite, test_init_handle_fail);
@@ -403,7 +507,6 @@ CuSuite* CuGetSuite(void)
 	SUITE_ADD_TEST(suite, test_tcp_connect_ok1);
     SUITE_ADD_TEST(suite, test_tcp_connect_ok2);
 
-#endif
 	SUITE_ADD_TEST(suite, test_unsub_nonexistent);
 	SUITE_ADD_TEST(suite, test_sub_alreadysub);
 	SUITE_ADD_TEST(suite, test_sub_diffpubstate);
@@ -411,7 +514,6 @@ CuSuite* CuGetSuite(void)
 	SUITE_ADD_TEST(suite, test_subunsub_thng);
 	SUITE_ADD_TEST(suite, test_subunsub_prod);
 
-#if 1
 	SUITE_ADD_TEST(suite, test_pubsub_thng_prop);
 	SUITE_ADD_TEST(suite, test_pubsuball_thng_prop);
 

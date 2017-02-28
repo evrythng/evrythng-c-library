@@ -11,6 +11,7 @@
 /* all failure return codes must be negative */
 enum returnCode 
 { 
+    MQTT_SUBSCRIPTION_FAILED = -4,
     MQTT_CONNECTION_LOST = -3, 
     MQTT_BUFFER_OVERFLOW = -2, 
     MQTT_FAILURE = -1, 

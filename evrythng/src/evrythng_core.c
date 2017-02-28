@@ -904,7 +904,7 @@ static void mqtt_thread(void* arg)
                             handle->qos);
                     if (rc >= 0) 
                     {
-                        debug("successfully subscribed to %s", handle->next_op.topic);
+                        debug("successfully subscribed to %s, return code %d", handle->next_op.topic, rc);
                         handle->next_op.result = EVRYTHNG_SUCCESS;
                     }
                     else
