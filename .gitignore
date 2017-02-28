@@ -39,3 +39,4 @@ cscope.*
 Config
 .DS_Store
 .idea
+tests/evrythng_config.h
