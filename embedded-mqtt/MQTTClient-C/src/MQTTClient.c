@@ -469,7 +469,6 @@ int MQTTSubscribe(MQTTClient* c, const char* topicFilter, enum QoS qos)
         int count = 0, grantedQoS = -1;
         unsigned short mypacketid;
         if (MQTTDeserialize_suback(&mypacketid, 1, &count, &grantedQoS, c->readbuf, c->readbuf_size) == 1) {
-            platform_printf("count = %d, grantedQoS = %d\n", count, grantedQoS);
             rc = grantedQoS; // 0, 1, 2 or 0x80 
             if (rc == 0x80)  //special value defined in mqtt spec
                 rc = MQTT_SUBSCRIPTION_FAILED;
