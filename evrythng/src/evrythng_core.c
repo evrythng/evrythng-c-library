@@ -515,6 +515,14 @@ evrythng_return_t EvrythngConnect(evrythng_handle_t handle)
     return evrythng_async_op(handle, MQTT_CONNECT, 0, 0, 0);
 }
 
+typedef enum _mqtt_connection_status_t {
+    MQTT_CONNECTION_ACCEPTED = 0x00,
+    MQTT_UNACCEPTABLE_PROTOCOL_VERSION = 0x01,
+    MQTT_IDENTIFIER_REJECTED = 0x02,
+    MQTT_SERVER_UNAVAILABLE = 0x03,
+    MQTT_BAD_USER_NAME_OR_PASSWORD = 0x04,
+    MQTT_NOT_AUTHORIZED = 0x05,
+} mqtt_connection_status_t;
 
 evrythng_return_t evrythng_connect_internal(evrythng_handle_t handle)
 {
@@ -545,10 +553,22 @@ evrythng_return_t evrythng_connect_internal(evrythng_handle_t handle)
 
         if ((rc = MQTTConnect(&handle->mqtt_client, &handle->mqtt_conn_opts)) != MQTT_SUCCESS)
         {
-            error("Failed to connect, return code %d", rc);
+            error("mqtt connection failed, code %d", rc);
             platform_network_disconnect(&handle->mqtt_network);
+
+            switch (rc) {
+                case MQTT_NOT_AUTHORIZED:
+                    return EVRYTHNG_AUTH_FAILED;
+
+                case MQTT_IDENTIFIER_REJECTED:
+                    return EVRYTHNG_CLIENT_ID_REJECTED;
+
+                default:
+                    break;
+            }
             continue;
         }
+
         debug("MQTT connected");
         break;
     }

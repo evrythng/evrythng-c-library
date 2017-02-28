@@ -29,6 +29,8 @@
 
 typedef enum _evrythng_return_t 
 {
+    EVRYTHNG_CLIENT_ID_REJECTED  = -15,
+    EVRYTHNG_AUTH_FAILED         = -14,
     EVRYTHNG_NOT_SUBSCRIBED      = -13,
     EVRYTHNG_ALREADY_SUBSCRIBED  = -12,
     EVRYTHNG_TIMEOUT             = -11,
@@ -233,7 +235,10 @@ evrythng_return_t EvrythngSetThreadStacksize(evrythng_handle_t handle, int stack
  *            \b EVRYTHNG_CERT_REQUIRED_ERROR if SSL url is setup but certificate was not provided\n
  *            \b EVRYTHNG_MEMORY_ERROR if memory allocation error occured \n
  *            \b EVRYTHNG_FAILURE if mqtt client creation/setup error occured \n
+ *            \b EVRYTHNG_TIMEOUT timeout waiting for server response \n
  *            \b EVRYTHNG_CONNECTION_FAILED if could not establish connection to the cloud \n
+ *            \b EVRYTHNG_AUTH_FAILED bad api key provided, server did not authorize the client \n
+ *            \b EVRYTHNG_CLIENT_ID_REJECTED bad client id provided, server rejected it\n
  *            \b EVRYTHNG_SUCCESS      on success \n
  */
 evrythng_return_t EvrythngConnect(evrythng_handle_t handle);
@@ -248,6 +253,7 @@ evrythng_return_t EvrythngConnect(evrythng_handle_t handle);
  *
  * @return    \b EVRYTHNG_BAD_ARGS if handle is a null pointer \n
  *            \b EVRYTHNG_FAILURE if mqtt client creation/setup error occured \n
+ *            \b EVRYTHNG_TIMEOUT timeout waiting for server response \n
  *            \b EVRYTHNG_SUCCESS      on success \n
  */
 evrythng_return_t EvrythngDisconnect(evrythng_handle_t handle);
@@ -266,6 +272,7 @@ evrythng_return_t EvrythngDisconnect(evrythng_handle_t handle);
  *            \b EVRYTHNG_PUBLISH_ERROR if an error occured trying to publish a message \n
  *            \b EVRYTHNG_MEMORY_ERROR if memory allocation error occured \n
  *            \b EVRYTHNG_NOT_CONNECTED if internal context is not in connected state \n
+ *            \b EVRYTHNG_TIMEOUT timeout waiting for server response \n
  *            \b EVRYTHNG_SUCCESS on success \n
  */
 evrythng_return_t EvrythngPubThngProperty(
@@ -290,6 +297,7 @@ evrythng_return_t EvrythngPubThngProperty(
  *            \b EVRYTHNG_ALREADY_SUBSCRIBED if subcribtion already exists \n
  *            \b EVRYTHNG_MEMORY_ERROR if memory allocation error occured \n
  *            \b EVRYTHNG_NOT_CONNECTED if internal context is not in connected state \n
+ *            \b EVRYTHNG_TIMEOUT timeout waiting for server response \n
  *            \b EVRYTHNG_SUCCESS on success \n
  */
 evrythng_return_t EvrythngSubThngProperty(
@@ -312,6 +320,7 @@ evrythng_return_t EvrythngSubThngProperty(
  *            \b EVRYTHNG_UNSUBSCRIPTION_ERROR if an error occured trying to unsubscribe from a topic \n
  *            \b EVRYTHNG_NOT_SUBSCRIBED if trying to unsubcribe from an unexistent subscribtion \n
  *            \b EVRYTHNG_NOT_CONNECTED if internal context is not in connected state \n
+ *            \b EVRYTHNG_TIMEOUT timeout waiting for server response \n
  *            \b EVRYTHNG_SUCCESS on success \n
  */
 evrythng_return_t EvrythngUnsubThngProperty(
@@ -335,6 +344,7 @@ evrythng_return_t EvrythngUnsubThngProperty(
  *            \b EVRYTHNG_ALREADY_SUBSCRIBED if subcribtion already exists \n
  *            \b EVRYTHNG_MEMORY_ERROR if memory allocation error occured \n
  *            \b EVRYTHNG_NOT_CONNECTED if internal context is not in connected state \n
+ *            \b EVRYTHNG_TIMEOUT timeout waiting for server response \n
  *            \b EVRYTHNG_SUCCESS on success \n
  */
 evrythng_return_t EvrythngSubThngProperties(
@@ -355,6 +365,7 @@ evrythng_return_t EvrythngSubThngProperties(
  *            \b EVRYTHNG_UNSUBSCRIPTION_ERROR if an error occured trying to unsubscribe from a topic \n
  *            \b EVRYTHNG_NOT_SUBSCRIBED if trying to unsubcribe from an unexistent subscribtion \n
  *            \b EVRYTHNG_NOT_CONNECTED if internal context is not in connected state \n
+ *            \b EVRYTHNG_TIMEOUT timeout waiting for server response \n
  *            \b EVRYTHNG_SUCCESS on success \n
  */
 evrythng_return_t EvrythngUnsubThngProperties(
@@ -374,6 +385,7 @@ evrythng_return_t EvrythngUnsubThngProperties(
  *            \b EVRYTHNG_PUBLISH_ERROR if an error occured trying to publish a message \n
  *            \b EVRYTHNG_MEMORY_ERROR if memory allocation error occured \n
  *            \b EVRYTHNG_NOT_CONNECTED if internal context is not in connected state \n
+ *            \b EVRYTHNG_TIMEOUT timeout waiting for server response \n
  *            \b EVRYTHNG_SUCCESS on success \n
  */
 evrythng_return_t EvrythngPubThngProperties(
@@ -397,6 +409,7 @@ evrythng_return_t EvrythngPubThngProperties(
  *            \b EVRYTHNG_ALREADY_SUBSCRIBED if subcribtion already exists \n
  *            \b EVRYTHNG_MEMORY_ERROR if memory allocation error occured \n
  *            \b EVRYTHNG_NOT_CONNECTED if internal context is not in connected state \n
+ *            \b EVRYTHNG_TIMEOUT timeout waiting for server response \n
  *            \b EVRYTHNG_SUCCESS on success \n
  */
 evrythng_return_t EvrythngSubThngAction(
@@ -419,6 +432,7 @@ evrythng_return_t EvrythngSubThngAction(
  *            \b EVRYTHNG_UNSUBSCRIPTION_ERROR if an error occured trying to unsubscribe from a topic \n
  *            \b EVRYTHNG_NOT_SUBSCRIBED if trying to unsubcribe from an unexistent subscribtion \n
  *            \b EVRYTHNG_NOT_CONNECTED if internal context is not in connected state \n
+ *            \b EVRYTHNG_TIMEOUT timeout waiting for server response \n
  *            \b EVRYTHNG_SUCCESS on success \n
  */
 evrythng_return_t EvrythngUnsubThngAction(
@@ -441,6 +455,7 @@ evrythng_return_t EvrythngUnsubThngAction(
  *            \b EVRYTHNG_ALREADY_SUBSCRIBED if subcribtion already exists \n
  *            \b EVRYTHNG_MEMORY_ERROR if memory allocation error occured \n
  *            \b EVRYTHNG_NOT_CONNECTED if internal context is not in connected state \n
+ *            \b EVRYTHNG_TIMEOUT timeout waiting for server response \n
  *            \b EVRYTHNG_SUCCESS on success \n
  */
 evrythng_return_t EvrythngSubThngActions(
@@ -461,6 +476,7 @@ evrythng_return_t EvrythngSubThngActions(
  *            \b EVRYTHNG_UNSUBSCRIPTION_ERROR if an error occured trying to unsubscribe from a topic \n
  *            \b EVRYTHNG_NOT_SUBSCRIBED if trying to unsubcribe from an unexistent subscribtion \n
  *            \b EVRYTHNG_NOT_CONNECTED if internal context is not in connected state \n
+ *            \b EVRYTHNG_TIMEOUT timeout waiting for server response \n
  *            \b EVRYTHNG_SUCCESS on success \n
  */
 evrythng_return_t EvrythngUnsubThngActions(
@@ -481,6 +497,7 @@ evrythng_return_t EvrythngUnsubThngActions(
  *            \b EVRYTHNG_PUBLISH_ERROR if an error occured trying to publish a message \n
  *            \b EVRYTHNG_MEMORY_ERROR if memory allocation error occured \n
  *            \b EVRYTHNG_NOT_CONNECTED if internal context is not in connected state \n
+ *            \b EVRYTHNG_TIMEOUT timeout waiting for server response \n
  *            \b EVRYTHNG_SUCCESS on success \n
  */
 evrythng_return_t EvrythngPubThngAction(
@@ -502,6 +519,7 @@ evrythng_return_t EvrythngPubThngAction(
  *            \b EVRYTHNG_PUBLISH_ERROR if an error occured trying to publish a message \n
  *            \b EVRYTHNG_MEMORY_ERROR if memory allocation error occured \n
  *            \b EVRYTHNG_NOT_CONNECTED if internal context is not in connected state \n
+ *            \b EVRYTHNG_TIMEOUT timeout waiting for server response \n
  *            \b EVRYTHNG_SUCCESS on success \n
  */
 evrythng_return_t EvrythngPubThngActions(
@@ -524,6 +542,7 @@ evrythng_return_t EvrythngPubThngActions(
  *            \b EVRYTHNG_ALREADY_SUBSCRIBED if subcribtion already exists \n
  *            \b EVRYTHNG_MEMORY_ERROR if memory allocation error occured \n
  *            \b EVRYTHNG_NOT_CONNECTED if internal context is not in connected state \n
+ *            \b EVRYTHNG_TIMEOUT timeout waiting for server response \n
  *            \b EVRYTHNG_SUCCESS on success \n
  */
 evrythng_return_t EvrythngSubThngLocation(
@@ -544,6 +563,7 @@ evrythng_return_t EvrythngSubThngLocation(
  *            \b EVRYTHNG_UNSUBSCRIPTION_ERROR if an error occured trying to unsubscribe from a topic \n
  *            \b EVRYTHNG_NOT_SUBSCRIBED if trying to unsubcribe from an unexistent subscribtion \n
  *            \b EVRYTHNG_NOT_CONNECTED if internal context is not in connected state \n
+ *            \b EVRYTHNG_TIMEOUT timeout waiting for server response \n
  *            \b EVRYTHNG_SUCCESS on success \n
  */
 evrythng_return_t EvrythngUnsubThngLocation(
@@ -563,6 +583,7 @@ evrythng_return_t EvrythngUnsubThngLocation(
  *            \b EVRYTHNG_PUBLISH_ERROR if an error occured trying to publish a message \n
  *            \b EVRYTHNG_MEMORY_ERROR if memory allocation error occured \n
  *            \b EVRYTHNG_NOT_CONNECTED if internal context is not in connected state \n
+ *            \b EVRYTHNG_TIMEOUT timeout waiting for server response \n
  *            \b EVRYTHNG_SUCCESS on success \n
  */
 evrythng_return_t EvrythngPubThngLocation(
@@ -586,6 +607,7 @@ evrythng_return_t EvrythngPubThngLocation(
  *            \b EVRYTHNG_ALREADY_SUBSCRIBED if subcribtion already exists \n
  *            \b EVRYTHNG_MEMORY_ERROR if memory allocation error occured \n
  *            \b EVRYTHNG_NOT_CONNECTED if internal context is not in connected state \n
+ *            \b EVRYTHNG_TIMEOUT timeout waiting for server response \n
  *            \b EVRYTHNG_SUCCESS on success \n
  */
 evrythng_return_t EvrythngSubProductProperty(
@@ -608,6 +630,7 @@ evrythng_return_t EvrythngSubProductProperty(
  *            \b EVRYTHNG_UNSUBSCRIPTION_ERROR if an error occured trying to unsubscribe from a topic \n
  *            \b EVRYTHNG_NOT_SUBSCRIBED if trying to unsubcribe from an unexistent subscribtion \n
  *            \b EVRYTHNG_NOT_CONNECTED if internal context is not in connected state \n
+ *            \b EVRYTHNG_TIMEOUT timeout waiting for server response \n
  *            \b EVRYTHNG_SUCCESS on success \n
  */
 evrythng_return_t EvrythngUnsubProductProperty(
@@ -631,6 +654,7 @@ evrythng_return_t EvrythngUnsubProductProperty(
  *            \b EVRYTHNG_ALREADY_SUBSCRIBED if subcribtion already exists \n
  *            \b EVRYTHNG_MEMORY_ERROR if memory allocation error occured \n
  *            \b EVRYTHNG_NOT_CONNECTED if internal context is not in connected state \n
+ *            \b EVRYTHNG_TIMEOUT timeout waiting for server response \n
  *            \b EVRYTHNG_SUCCESS on success \n
  */
 evrythng_return_t EvrythngSubProductProperties(
@@ -651,6 +675,7 @@ evrythng_return_t EvrythngSubProductProperties(
  *            \b EVRYTHNG_UNSUBSCRIPTION_ERROR if an error occured trying to unsubscribe from a topic \n
  *            \b EVRYTHNG_NOT_SUBSCRIBED if trying to unsubcribe from an unexistent subscribtion \n
  *            \b EVRYTHNG_NOT_CONNECTED if internal context is not in connected state \n
+ *            \b EVRYTHNG_TIMEOUT timeout waiting for server response \n
  *            \b EVRYTHNG_SUCCESS on success \n
  */
 evrythng_return_t EvrythngUnsubProductProperties(
@@ -671,6 +696,7 @@ evrythng_return_t EvrythngUnsubProductProperties(
  *            \b EVRYTHNG_PUBLISH_ERROR if an error occured trying to publish a message \n
  *            \b EVRYTHNG_MEMORY_ERROR if memory allocation error occured \n
  *            \b EVRYTHNG_NOT_CONNECTED if internal context is not in connected state \n
+ *            \b EVRYTHNG_TIMEOUT timeout waiting for server response \n
  *            \b EVRYTHNG_SUCCESS on success \n
  */
 evrythng_return_t EvrythngPubProductProperty(
@@ -692,6 +718,7 @@ evrythng_return_t EvrythngPubProductProperty(
  *            \b EVRYTHNG_PUBLISH_ERROR if an error occured trying to publish a message \n
  *            \b EVRYTHNG_MEMORY_ERROR if memory allocation error occured \n
  *            \b EVRYTHNG_NOT_CONNECTED if internal context is not in connected state \n
+ *            \b EVRYTHNG_TIMEOUT timeout waiting for server response \n
  *            \b EVRYTHNG_SUCCESS on success \n
  */
 evrythng_return_t EvrythngPubProductProperties(
@@ -715,6 +742,7 @@ evrythng_return_t EvrythngPubProductProperties(
  *            \b EVRYTHNG_ALREADY_SUBSCRIBED if subcribtion already exists \n
  *            \b EVRYTHNG_MEMORY_ERROR if memory allocation error occured \n
  *            \b EVRYTHNG_NOT_CONNECTED if internal context is not in connected state \n
+ *            \b EVRYTHNG_TIMEOUT timeout waiting for server response \n
  *            \b EVRYTHNG_SUCCESS on success \n
  */
 evrythng_return_t EvrythngSubProductAction(
@@ -737,6 +765,7 @@ evrythng_return_t EvrythngSubProductAction(
  *            \b EVRYTHNG_UNSUBSCRIPTION_ERROR if an error occured trying to unsubscribe from a topic \n
  *            \b EVRYTHNG_NOT_SUBSCRIBED if trying to unsubcribe from an unexistent subscribtion \n
  *            \b EVRYTHNG_NOT_CONNECTED if internal context is not in connected state \n
+ *            \b EVRYTHNG_TIMEOUT timeout waiting for server response \n
  *            \b EVRYTHNG_SUCCESS on success \n
  */
 evrythng_return_t EvrythngUnsubProductAction(
@@ -759,6 +788,7 @@ evrythng_return_t EvrythngUnsubProductAction(
  *            \b EVRYTHNG_ALREADY_SUBSCRIBED if subcribtion already exists \n
  *            \b EVRYTHNG_MEMORY_ERROR if memory allocation error occured \n
  *            \b EVRYTHNG_NOT_CONNECTED if internal context is not in connected state \n
+ *            \b EVRYTHNG_TIMEOUT timeout waiting for server response \n
  *            \b EVRYTHNG_SUCCESS on success \n
  */
 evrythng_return_t EvrythngSubProductActions(
@@ -779,6 +809,7 @@ evrythng_return_t EvrythngSubProductActions(
  *            \b EVRYTHNG_UNSUBSCRIPTION_ERROR if an error occured trying to unsubscribe from a topic \n
  *            \b EVRYTHNG_NOT_SUBSCRIBED if trying to unsubcribe from an unexistent subscribtion \n
  *            \b EVRYTHNG_NOT_CONNECTED if internal context is not in connected state \n
+ *            \b EVRYTHNG_TIMEOUT timeout waiting for server response \n
  *            \b EVRYTHNG_SUCCESS on success \n
  */
 evrythng_return_t EvrythngUnsubProductActions(
@@ -799,6 +830,7 @@ evrythng_return_t EvrythngUnsubProductActions(
  *            \b EVRYTHNG_PUBLISH_ERROR if an error occured trying to publish a message \n
  *            \b EVRYTHNG_MEMORY_ERROR if memory allocation error occured \n
  *            \b EVRYTHNG_NOT_CONNECTED if internal context is not in connected state \n
+ *            \b EVRYTHNG_TIMEOUT timeout waiting for server response \n
  *            \b EVRYTHNG_SUCCESS on success \n
  */
 evrythng_return_t EvrythngPubProductAction(
@@ -820,6 +852,7 @@ evrythng_return_t EvrythngPubProductAction(
  *            \b EVRYTHNG_PUBLISH_ERROR if an error occured trying to publish a message \n
  *            \b EVRYTHNG_MEMORY_ERROR if memory allocation error occured \n
  *            \b EVRYTHNG_NOT_CONNECTED if internal context is not in connected state \n
+ *            \b EVRYTHNG_TIMEOUT timeout waiting for server response \n
  *            \b EVRYTHNG_SUCCESS on success \n
  */
 evrythng_return_t EvrythngPubProductActions(
@@ -842,6 +875,7 @@ evrythng_return_t EvrythngPubProductActions(
  *            \b EVRYTHNG_ALREADY_SUBSCRIBED if subcribtion already exists \n
  *            \b EVRYTHNG_MEMORY_ERROR if memory allocation error occured \n
  *            \b EVRYTHNG_NOT_CONNECTED if internal context is not in connected state \n
+ *            \b EVRYTHNG_TIMEOUT timeout waiting for server response \n
  *            \b EVRYTHNG_SUCCESS on success \n
  */
 evrythng_return_t EvrythngSubAction(
@@ -862,6 +896,7 @@ evrythng_return_t EvrythngSubAction(
  *            \b EVRYTHNG_UNSUBSCRIPTION_ERROR if an error occured trying to unsubscribe from a topic \n
  *            \b EVRYTHNG_NOT_SUBSCRIBED if trying to unsubcribe from an unexistent subscribtion \n
  *            \b EVRYTHNG_NOT_CONNECTED if internal context is not in connected state \n
+ *            \b EVRYTHNG_TIMEOUT timeout waiting for server response \n
  *            \b EVRYTHNG_SUCCESS on success \n
  */
 evrythng_return_t EvrythngUnsubAction(
@@ -882,6 +917,7 @@ evrythng_return_t EvrythngUnsubAction(
  *            \b EVRYTHNG_ALREADY_SUBSCRIBED if subcribtion already exists \n
  *            \b EVRYTHNG_MEMORY_ERROR if memory allocation error occured \n
  *            \b EVRYTHNG_NOT_CONNECTED if internal context is not in connected state \n
+ *            \b EVRYTHNG_TIMEOUT timeout waiting for server response \n
  *            \b EVRYTHNG_SUCCESS on success \n
  */
 evrythng_return_t EvrythngSubActions(
@@ -900,6 +936,7 @@ evrythng_return_t EvrythngSubActions(
  *            \b EVRYTHNG_UNSUBSCRIPTION_ERROR if an error occured trying to unsubscribe from a topic \n
  *            \b EVRYTHNG_NOT_SUBSCRIBED if trying to unsubcribe from an unexistent subscribtion \n
  *            \b EVRYTHNG_NOT_CONNECTED if internal context is not in connected state \n
+ *            \b EVRYTHNG_TIMEOUT timeout waiting for server response \n
  *            \b EVRYTHNG_SUCCESS on success \n
  */
 evrythng_return_t EvrythngUnsubActions(
@@ -918,6 +955,7 @@ evrythng_return_t EvrythngUnsubActions(
  *            \b EVRYTHNG_PUBLISH_ERROR if an error occured trying to publish a message \n
  *            \b EVRYTHNG_MEMORY_ERROR if memory allocation error occured \n
  *            \b EVRYTHNG_NOT_CONNECTED if internal context is not in connected state \n
+ *            \b EVRYTHNG_TIMEOUT timeout waiting for server response \n
  *            \b EVRYTHNG_SUCCESS on success \n
  */
 evrythng_return_t EvrythngPubAction(
@@ -937,6 +975,7 @@ evrythng_return_t EvrythngPubAction(
  *            \b EVRYTHNG_PUBLISH_ERROR if an error occured trying to publish a message \n
  *            \b EVRYTHNG_MEMORY_ERROR if memory allocation error occured \n
  *            \b EVRYTHNG_NOT_CONNECTED if internal context is not in connected state \n
+ *            \b EVRYTHNG_TIMEOUT timeout waiting for server response \n
  *            \b EVRYTHNG_SUCCESS on success \n
  */
 evrythng_return_t EvrythngPubActions(
