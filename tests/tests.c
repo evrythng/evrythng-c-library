@@ -435,11 +435,11 @@ void test_subscribe_bad_entity_name(CuTest* tc)
     evrythng_handle_t h1;
     common_tcp_init_handle(&h1);
     CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, EvrythngConnect(h1));
-    CuAssertIntEquals(tc, EVRYTHNG_SUBSCRIPTION_ERROR, EvrythngSubThngProperty(h1, THNG_1, "prop", 0, test_sub_callback));
+    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, EvrythngSubThngProperty(h1, THNG_1, "prop", 0, test_sub_callback));
     CuAssertIntEquals(tc, EVRYTHNG_SUBSCRIPTION_ERROR, EvrythngSubThngAction(h1, THNG_1, "act", 0, test_sub_callback));
-    CuAssertIntEquals(tc, EVRYTHNG_SUBSCRIPTION_ERROR, EvrythngSubProductProperty(h1, PRODUCT_1, "prop", 0, test_sub_callback));
+    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, EvrythngSubProductProperty(h1, PRODUCT_1, "prop", 0, test_sub_callback));
     CuAssertIntEquals(tc, EVRYTHNG_SUBSCRIPTION_ERROR, EvrythngSubProductAction(h1, PRODUCT_1, "prop", 0, test_sub_callback));
-    CuAssertIntEquals(tc, EVRYTHNG_SUBSCRIPTION_ERROR, EvrythngSubAction(h1, "act", 0, test_sub_callback));
+    CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, EvrythngSubAction(h1, "act", 0, test_sub_callback));
     CuAssertIntEquals(tc, EVRYTHNG_SUCCESS, EvrythngDisconnect(h1));
     EvrythngDestroyHandle(h1);
     PRINT_END_MEM_STATS
