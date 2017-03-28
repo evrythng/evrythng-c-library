@@ -440,7 +440,7 @@ void message_callback(MessageData* data, void* userdata)
 
 static evrythng_return_t evrythng_async_op(evrythng_handle_t handle, int op, const char* topic, MQTTMessage* message, sub_callback *callback)
 {
-    evrythng_return_t rc;
+    evrythng_return_t rc = EVRYTHNG_FAILURE;
 
     if (!handle)
         return EVRYTHNG_BAD_ARGS;
@@ -456,20 +456,29 @@ static evrythng_return_t evrythng_async_op(evrythng_handle_t handle, int op, con
 
     platform_mutex_unlock(&handle->next_op_mtx);
 
+    platform_printf("%s:%d next_op_result_sem = %d, next_op_ready_sem = %d\n", __func__, __LINE__,
+            os_semaphore_getcount(handle->next_op_result_sem.sem),
+            os_semaphore_getcount(handle->next_op_ready_sem.sem));
+
     platform_semaphore_post(&handle->next_op_ready_sem);
 
     if (platform_semaphore_wait(&handle->next_op_result_sem, handle->command_timeout_ms * 2))
     {
+    platform_printf("%s:%d\n", __func__, __LINE__);
         platform_mutex_lock(&handle->next_op_mtx);
         handle->next_op.op = MQTT_NOP;
         platform_semaphore_wait(&handle->next_op_result_sem, 0);
+        platform_semaphore_wait(&handle->next_op_ready_sem, 0);
         platform_mutex_unlock(&handle->next_op_mtx);
         rc = EVRYTHNG_TIMEOUT;
     }
     else
     {
+    platform_printf("%s:%d\n", __func__, __LINE__);
         rc = handle->next_op.result;
     }
+
+    platform_printf("%s:%d\n", __func__, __LINE__);
 
     platform_mutex_unlock(&handle->async_op_mtx);
 
@@ -769,6 +778,8 @@ evrythng_return_t evrythng_subscribe(
         }
     }
 
+    debug("subscribing to: %s", sub_topic);
+
     return evrythng_async_op(handle, MQTT_SUBSCRIBE, sub_topic, 0, callback);
 }
 
@@ -873,6 +884,7 @@ static void mqtt_thread(void* arg)
                 break;
 
             case MQTT_PUBLISH:
+                platform_printf("%s:%d: topic = %s\n", __func__, __LINE__, handle->next_op.topic);
                 rc = MQTTPublish(&handle->mqtt_client, 
                         handle->next_op.topic,
                         handle->next_op.message);
@@ -943,6 +955,7 @@ static void mqtt_thread(void* arg)
                 break;
         }
 
+    platform_printf("%s:%d\n", __func__, __LINE__);
         platform_semaphore_post(&handle->next_op_result_sem);
 
         platform_mutex_unlock(&handle->next_op_mtx);
