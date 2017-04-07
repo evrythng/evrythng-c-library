@@ -211,7 +211,11 @@ int keepalive(MQTTClient* c)
         goto exit;
     }
 
-    //printf("%s: %d, ping time left: %d, tick count = %u\n", __func__, __LINE__, TimerLeftMS(&c->ping_timer), xTaskGetTickCount());
+#if 0
+    platform_printf("%s: %d, ping time left: %d, tick count = %u\n", 
+            __func__, __LINE__, 
+            platform_timer_left(&c->ping_timer), xTaskGetTickCount());
+#endif
 
     if (platform_timer_isexpired(&c->ping_timer))
     {
