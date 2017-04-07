@@ -440,7 +440,7 @@ void message_callback(MessageData* data, void* userdata)
 
 static evrythng_return_t evrythng_async_op(evrythng_handle_t handle, int op, const char* topic, MQTTMessage* message, sub_callback *callback)
 {
-    evrythng_return_t rc;
+    evrythng_return_t rc = EVRYTHNG_FAILURE;
 
     if (!handle)
         return EVRYTHNG_BAD_ARGS;
@@ -463,6 +463,7 @@ static evrythng_return_t evrythng_async_op(evrythng_handle_t handle, int op, con
         platform_mutex_lock(&handle->next_op_mtx);
         handle->next_op.op = MQTT_NOP;
         platform_semaphore_wait(&handle->next_op_result_sem, 0);
+        platform_semaphore_wait(&handle->next_op_ready_sem, 0);
         platform_mutex_unlock(&handle->next_op_mtx);
         rc = EVRYTHNG_TIMEOUT;
     }
@@ -768,6 +769,8 @@ evrythng_return_t evrythng_subscribe(
             return EVRYTHNG_BAD_ARGS;
         }
     }
+
+    debug("subscribing to: %s", sub_topic);
 
     return evrythng_async_op(handle, MQTT_SUBSCRIBE, sub_topic, 0, callback);
 }
