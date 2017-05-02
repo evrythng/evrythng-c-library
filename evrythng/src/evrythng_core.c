@@ -458,7 +458,11 @@ static evrythng_return_t evrythng_async_op(evrythng_handle_t handle, int op, con
 
     platform_semaphore_post(&handle->next_op_ready_sem);
 
-    if (platform_semaphore_wait(&handle->next_op_result_sem, handle->command_timeout_ms * 2))
+    int timeout = handle->command_timeout_ms * 2;
+    if (op == MQTT_CONNECT)
+        timeout = handle->command_timeout_ms * 6;
+
+    if (platform_semaphore_wait(&handle->next_op_result_sem, timeout))
     {
         platform_mutex_lock(&handle->next_op_mtx);
         handle->next_op.op = MQTT_NOP;
@@ -525,14 +529,35 @@ typedef enum _mqtt_connection_status_t {
     MQTT_NOT_AUTHORIZED = 0x05,
 } mqtt_connection_status_t;
 
+#define max(a,b) ((a)>(b)?(a):(b))
+
+static int next_sleep_time(int retry_count) 
+{
+    //special case
+    if (retry_count == 0)
+        return 0;
+    /*
+     * base is 500 ms, min factor is 2 (1 sec);
+     * multiply base by a factor that is chosen 
+     * randomly within the increasing interval;
+     */
+    static const int base = 500;
+    static const int cap = 2;
+    /*
+     * adding 2 to the retry count to increase
+     * interval for random values faster;
+     */
+    int rand = platform_rand() % (1 << (retry_count + 2));
+    return base * max(cap, rand);
+}
+
 evrythng_return_t evrythng_connect_internal(evrythng_handle_t handle)
 {
-    int rc;
+    int rc = EVRYTHNG_SUCCESS;
 
-    if (MQTTisConnected(&handle->mqtt_client))
-    {
+    if (MQTTisConnected(&handle->mqtt_client)) {
         warning("already connected");
-        return EVRYTHNG_SUCCESS;
+        return rc;
     }
 
     if (handle->secure_connection)
@@ -540,66 +565,63 @@ evrythng_return_t evrythng_connect_internal(evrythng_handle_t handle)
     else
         platform_network_init(&handle->mqtt_network);
 
-    int attempt;
-    for (attempt = 1; attempt <= 3; attempt++)
-    {
-        debug("connecting to host: %s, port: %d (%d)", handle->host, handle->port, attempt);
-        if (platform_network_connect(&handle->mqtt_network, handle->host, handle->port))
-        {
+    for (int retry_count = 0; retry_count < 7; ++retry_count) {
+
+        int sleep_time = next_sleep_time(retry_count);
+        debug("sleeping %d ms before trying to connect...\n", sleep_time);
+        platform_sleep(sleep_time);
+
+        debug("connecting to host: %s, port: %d (%d)...", handle->host, handle->port, retry_count);
+        if (platform_network_connect(&handle->mqtt_network, handle->host, handle->port)) {
             error("Failed to establish network connection");
-            platform_network_disconnect(&handle->mqtt_network);
-            continue;
-        }
-        debug("network connection established");
+            rc = EVRYTHNG_CONNECTION_FAILED;
+        } else {
+            debug("network connection ok, establishing mqtt connection...");
+            if ((rc = MQTTConnect(&handle->mqtt_client, &handle->mqtt_conn_opts)) != MQTT_SUCCESS) {
+                error("mqtt connection failed, mqtt error code: %d", rc);
 
-        if ((rc = MQTTConnect(&handle->mqtt_client, &handle->mqtt_conn_opts)) != MQTT_SUCCESS)
-        {
-            error("mqtt connection failed, code %d", rc);
-            platform_network_disconnect(&handle->mqtt_network);
-
-            switch (rc) {
-                case MQTT_NOT_AUTHORIZED:
-                    return EVRYTHNG_AUTH_FAILED;
-
-                case MQTT_IDENTIFIER_REJECTED:
-                    return EVRYTHNG_CLIENT_ID_REJECTED;
-
-                default:
-                    break;
+                switch (rc) {
+                    case MQTT_NOT_AUTHORIZED:
+                        rc = EVRYTHNG_AUTH_FAILED;
+                        break;
+                    case MQTT_IDENTIFIER_REJECTED:
+                        rc = EVRYTHNG_CLIENT_ID_REJECTED;
+                        break;
+                    default:
+                        rc = EVRYTHNG_CONNECTION_FAILED;
+                        break;
+                }
+            } else {
+                debug("mqtt connection ok");
+                rc = EVRYTHNG_SUCCESS;
+                break;
             }
-            continue;
         }
 
-        debug("MQTT connected");
-        break;
+        platform_network_disconnect(&handle->mqtt_network);
+
     }
 
-    if (!MQTTisConnected(&handle->mqtt_client))
-    {
-        return EVRYTHNG_CONNECTION_FAILED;
+    if (!MQTTisConnected(&handle->mqtt_client)) {
+        return rc;
     }
-
 
     sub_callback_t* _sub_callback = handle->sub_callbacks;
-    while (_sub_callback) 
-    {
-        int rc = MQTTSubscribe(
+    while (_sub_callback) {
+        int ret = MQTTSubscribe(
                 &handle->mqtt_client, 
                 _sub_callback->topic, 
                 _sub_callback->qos);
-        if (rc >= 0) 
-        {
+        if (ret >= 0) {
             debug("successfully subscribed to %s", _sub_callback->topic);
-        }
-        else 
-        {
-            error("subscription failed, rc = %d", rc);
+        } else {
+            error("subscription failed, ret = %d", ret);
             break;
         }
         _sub_callback = _sub_callback->next;
     }
 
-    return EVRYTHNG_SUCCESS;
+    return rc;
 }
 
 
@@ -846,7 +868,7 @@ static void mqtt_thread(void* arg)
                 if (evrythng_connect_internal(handle) != EVRYTHNG_SUCCESS)
                 {
                     platform_printf("could not connect, retrying\n");
-                    platform_sleep(300);
+                    platform_sleep(1000);
                     continue;
                 }
                 
