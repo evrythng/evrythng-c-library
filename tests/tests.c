@@ -80,6 +80,17 @@ void log_callback(evrythng_log_level_t level, const char* fmt, va_list vl)
 #define PRINT_END_MEM_STATS 
 #endif
 
+#define CuAssertIntInterval(tc, a, b, ret) \
+    CuAssertIntEquals((tc), 1, ((ret) >= (a) && (ret) <= (b)))
+
+#define CuAssertIntAlmostEqual(tc, expected, delta, ret) \
+{\
+    int _min = (expected) - (delta);\
+    int _max = (expected) + (delta);\
+    int _ret = (ret);\
+    CuAssertIntInterval(tc, _min, _max, _ret);\
+}
+
 
 void test_init_handle_ok(CuTest* tc)
 {
@@ -480,10 +491,48 @@ void test_publish_bad_entity(CuTest* tc)
     PRINT_END_MEM_STATS
 }
 
+
+extern int next_sleep_time(int);
+
+static int next_time_cal_avg(int step)
+{
+    int acc = 0;
+    int count = 10000;
+
+    for (int i = 0; i < count; ++i) {
+        acc += next_sleep_time(step);
+    }
+
+    //printf("avg sleep time on step %d = %d\n", step, acc/count);
+
+    return acc/count;
+}
+
+void test_exp_backoff(CuTest* tc)
+{
+    srand(time(0));
+
+    static int base = 500;
+    static int min_sleep = 1000;//2*base;
+#define next_time_calc(retry) ((1<<((retry)+2))*base)
+
+    CuAssertIntEquals(tc, 0, next_sleep_time(0));
+
+    CuAssertIntAlmostEqual(tc, next_time_calc(1)/2, 1000, next_time_cal_avg(1));
+    CuAssertIntAlmostEqual(tc, next_time_calc(2)/2, 1000, next_time_cal_avg(2));
+    CuAssertIntAlmostEqual(tc, next_time_calc(3)/2, 1000, next_time_cal_avg(3));
+    CuAssertIntAlmostEqual(tc, next_time_calc(4)/2, 1000, next_time_cal_avg(4));
+    CuAssertIntAlmostEqual(tc, next_time_calc(5)/2, 1000, next_time_cal_avg(5));
+    CuAssertIntAlmostEqual(tc, next_time_calc(6)/2, 1000, next_time_cal_avg(6));
+    CuAssertIntAlmostEqual(tc, next_time_calc(7)/2, 1500, next_time_cal_avg(7));
+}
+
+
 CuSuite* CuGetSuite(void)
 {
 	CuSuite* suite = CuSuiteNew();
 
+#if 1
 	SUITE_ADD_TEST(suite, test_connect_bad_clientid);
 	SUITE_ADD_TEST(suite, test_connect_bad_apikey);
 
@@ -493,7 +542,6 @@ CuSuite* CuGetSuite(void)
 	SUITE_ADD_TEST(suite, test_publish_bad_thngid);
 	SUITE_ADD_TEST(suite, test_publish_bad_entity);
     
-#if 1
 	SUITE_ADD_TEST(suite, test_init_handle_ok);
 	SUITE_ADD_TEST(suite, test_init_handle_fail);
 	SUITE_ADD_TEST(suite, test_set_url_ok);
@@ -529,7 +577,9 @@ CuSuite* CuGetSuite(void)
 
 	SUITE_ADD_TEST(suite, test_pubsub_action);
 	SUITE_ADD_TEST(suite, test_pubsuball_actions);
+
 #endif
+	SUITE_ADD_TEST(suite, test_exp_backoff);
 
 	return suite;
 }

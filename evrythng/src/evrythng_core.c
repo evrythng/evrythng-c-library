@@ -531,7 +531,7 @@ typedef enum _mqtt_connection_status_t {
 
 #define max(a,b) ((a)>(b)?(a):(b))
 
-static int next_sleep_time(int retry_count) 
+int next_sleep_time(int retry_count) 
 {
     //special case
     if (retry_count == 0)
