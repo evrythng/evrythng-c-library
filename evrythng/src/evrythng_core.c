@@ -112,7 +112,7 @@ evrythng_return_t EvrythngInitHandle(evrythng_handle_t* handle)
     (*handle)->qos = 1;
 
     (*handle)->ca_buf = cert_buffer;
-    (*handle)->ca_size = sizeof cert_buffer;
+    (*handle)->ca_size = strlen(cert_buffer);
 
     (*handle)->command_timeout_ms = (*handle)->mqtt_conn_opts.keepAliveInterval * 1000;
 
