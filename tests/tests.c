@@ -510,10 +510,8 @@ static int next_time_cal_avg(int step)
 
 void test_exp_backoff(CuTest* tc)
 {
-    srand(time(0));
-
     static int base = 500;
-    static int min_sleep = 1000;//2*base;
+
 #define next_time_calc(retry) ((1<<((retry)+2))*base)
 
     CuAssertIntEquals(tc, 0, next_sleep_time(0));
