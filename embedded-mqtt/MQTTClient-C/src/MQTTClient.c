@@ -315,7 +315,11 @@ int cycle(MQTTClient* c, Timer* timer)
             break;
     }
 
-    keepalive(c);
+    if (keepalive(c) == MQTT_CONNECTION_LOST)
+    {
+        rc = MQTT_CONNECTION_LOST;
+        goto exit;
+    }
 
     if (c->ping_outstanding && platform_timer_isexpired(&c->pingresp_timer))
     {
